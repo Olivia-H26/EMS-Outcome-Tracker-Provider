@@ -1,678 +1,930 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
+  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Provider-facing EMS-to-hospital clinical continuity dashboard">
+  <meta name="description" content="Provider-facing EMS-to-hospital outcome tracker">
   <title>EMS Outcome Tracker | Provider Dashboard</title>
+
   <script src="https://cdn.jsdelivr.net/npm/fhirclient@3.0.1/bundle/fhir-client.js"></script>
+
   <style>
     :root {
-      color-scheme: light;
-      --navy:#173b57;
-      --blue:#235d82;
-      --ink:#243447;
-      --muted:#617386;
-      --line:#d9e2ea;
-      --surface:#fff;
-      --page:#f3f6f9;
-      --soft:#edf3f7;
-      --danger:#9d2424;
+      --navy: #173b57;
+      --blue: #235d82;
+      --ink: #243447;
+      --muted: #617386;
+      --line: #d9e2ea;
+      --page: #f3f6f9;
+      --white: #ffffff;
+      --soft: #edf3f7;
+      --danger: #9d2424;
     }
-    * { box-sizing:border-box; }
+
+    * {
+      box-sizing: border-box;
+    }
+
     body {
-      margin:0;
-      background:var(--page);
-      color:var(--ink);
-      font:16px/1.5 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      margin: 0;
+      background: var(--page);
+      color: var(--ink);
+      font: 16px/1.5 system-ui, sans-serif;
     }
+
     header {
-      background:var(--navy);
-      color:white;
-      padding:1.35rem max(1rem,calc((100% - 1100px)/2));
+      background: var(--navy);
+      color: white;
+      padding: 1.4rem max(1rem, calc((100% - 1100px) / 2));
     }
-    header h1 { margin:0; font-size:1.65rem; }
-    header p { margin:.25rem 0 0; color:#e0eaf1; }
+
+    header h1 {
+      margin: 0;
+      font-size: 1.65rem;
+    }
+
+    header p {
+      margin: .25rem 0 0;
+      color: #e0eaf1;
+    }
+
     main {
-      max-width:1100px;
-      margin:1.5rem auto;
-      padding:0 1rem 3rem;
+      max-width: 1100px;
+      margin: 1.5rem auto;
+      padding: 0 1rem 3rem;
     }
+
     .panel {
-      background:var(--surface);
-      border:1px solid var(--line);
-      border-radius:12px;
-      padding:1.2rem;
-      margin-bottom:1rem;
-      box-shadow:0 2px 8px rgba(20,45,65,.035);
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 1.2rem;
+      margin-bottom: 1rem;
+      box-shadow: 0 2px 8px rgba(20,45,65,.035);
     }
-    h2 { color:var(--navy); font-size:1.2rem; margin:0 0 .85rem; }
-    h3 { margin:.15rem 0 .65rem; font-size:1.02rem; color:var(--navy); }
-    p { margin:.35rem 0; }
-    .muted { color:var(--muted); }
+
+    h2 {
+      color: var(--navy);
+      font-size: 1.2rem;
+      margin: 0 0 .85rem;
+    }
+
+    h3 {
+      margin: .15rem 0 .65rem;
+      font-size: 1.02rem;
+      color: var(--navy);
+    }
+
+    p {
+      margin: .35rem 0;
+    }
+
+    .muted {
+      color: var(--muted);
+    }
+
     .status {
-      padding:.8rem 1rem;
-      border-radius:8px;
-      background:var(--soft);
-      color:var(--navy);
-      margin:.8rem 0 1rem;
-      overflow-wrap:anywhere;
+      padding: .8rem 1rem;
+      border-radius: 8px;
+      background: var(--soft);
+      color: var(--navy);
+      margin: .8rem 0 1rem;
+      overflow-wrap: anywhere;
     }
-    .error { background:#fff0f0; color:var(--danger); }
-    .success { background:#edf7f0; color:#205a35; }
-    .search-row { display:flex; gap:.65rem; flex-wrap:wrap; }
+
+    .error {
+      background: #fff0f0;
+      color: var(--danger);
+    }
+
+    .search-row {
+      display: flex;
+      gap: .65rem;
+      flex-wrap: wrap;
+    }
+
     input {
-      flex:1 1 260px;
-      min-width:0;
-      padding:.8rem .9rem;
-      border:1px solid #9cabb8;
-      border-radius:8px;
-      font:inherit;
+      flex: 1 1 260px;
+      min-width: 0;
+      padding: .8rem .9rem;
+      border: 1px solid #9cabb8;
+      border-radius: 8px;
+      font: inherit;
     }
-    button,.button-link {
-      border:0;
-      border-radius:8px;
-      background:var(--blue);
-      color:white;
-      padding:.78rem 1rem;
-      font:600 1rem system-ui,sans-serif;
-      cursor:pointer;
-      text-decoration:none;
-      display:inline-block;
+
+    button, .button-link {
+      border: 0;
+      border-radius: 8px;
+      background: var(--blue);
+      color: white;
+      padding: .78rem 1rem;
+      font: 600 1rem system-ui, sans-serif;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
     }
-    button:hover,.button-link:hover { background:var(--navy); }
-    button:disabled { opacity:.6; cursor:wait; }
-    .result-list,.record-list {
-      display:grid;
-      gap:.7rem;
-      margin-top:.8rem;
+
+    button:hover, .button-link:hover {
+      background: var(--navy);
     }
+
+    button:disabled {
+      opacity: .6;
+      cursor: wait;
+    }
+
+    .result-list, .record-list {
+      display: grid;
+      gap: .7rem;
+      margin-top: .8rem;
+    }
+
     .patient-result {
-      width:100%;
-      text-align:left;
-      background:#f7fafc;
-      color:var(--ink);
-      border:1px solid var(--line);
+      width: 100%;
+      text-align: left;
+      background: #f7fafc;
+      color: var(--ink);
+      border: 1px solid var(--line);
     }
-    .patient-result:hover { background:#edf3f7; }
-    .patient-result strong { color:var(--navy); }
+
+    .patient-result:hover {
+      background: #edf3f7;
+    }
+
+    .patient-result strong {
+      color: var(--navy);
+    }
+
     .record {
-      border:1px solid var(--line);
-      border-radius:9px;
-      padding:.95rem;
-      background:#fff;
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      padding: .95rem;
+      background: white;
     }
-    .record p { margin:.25rem 0; overflow-wrap:anywhere; }
-    .record-label { font-weight:650; color:#42586c; }
+
+    .record p {
+      margin: .25rem 0;
+      overflow-wrap: anywhere;
+    }
+
+    .record-label {
+      font-weight: 650;
+      color: #42586c;
+    }
+
     .grid {
-      display:grid;
-      grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
-      gap:.7rem 1.2rem;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: .7rem 1.2rem;
     }
-    .field { min-width:0; overflow-wrap:anywhere; }
+
+    .field {
+      min-width: 0;
+      overflow-wrap: anywhere;
+    }
+
     .field strong {
-      display:block;
-      color:#506477;
-      font-size:.84rem;
-      font-weight:650;
+      display: block;
+      color: #506477;
+      font-size: .84rem;
     }
-    .field span { display:block; }
-    .tag {
-      display:inline-block;
-      border:1px solid #b9c9d5;
-      border-radius:99px;
-      padding:.12rem .55rem;
-      color:#39566c;
-      font-size:.82rem;
-      margin:.1rem .2rem .1rem 0;
+
+    .field span {
+      display: block;
     }
-    [hidden] { display:none !important; }
+
+    [hidden] {
+      display: none !important;
+    }
+
     footer {
-      text-align:center;
-      color:var(--muted);
-      font-size:.85rem;
-      padding:1rem;
+      text-align: center;
+      color: var(--muted);
+      font-size: .85rem;
+      padding: 1rem;
     }
-    @media (max-width:560px) {
-      header h1 { font-size:1.35rem; }
-      .panel { padding:1rem; }
+
+    @media (max-width: 560px) {
+      header h1 {
+        font-size: 1.35rem;
+      }
+
+      .panel {
+        padding: 1rem;
+      }
     }
   </style>
 </head>
 
 <body>
-  <header>
-    <h1>EMS Outcome Tracker</h1>
-    <p>Provider dashboard · EMS-to-hospital clinical continuity</p>
-  </header>
 
-  <main>
-    <section id="login-panel" class="panel" hidden>
-      <h2>Provider sign-in required</h2>
-      <p id="login-message" class="muted">
-        Sign in through the SMART sandbox to open the dashboard.
-      </p>
-      <p>
-        <a class="button-link" href="./launch.html">Sign in as a provider</a>
-      </p>
-    </section>
+<header>
+  <h1>EMS Outcome Tracker</h1>
+  <p>Provider Dashboard · EMS-to-Hospital Clinical Continuity</p>
+</header>
 
-    <section id="dashboard" hidden>
-      <div id="connection-status" class="status" role="status">
-        Connecting…
+<main>
+
+  <!-- PROVIDER SIGN-IN -->
+  <section id="login-panel" class="panel" hidden>
+    <h2>Provider Sign-In Required</h2>
+
+    <p id="login-message" class="muted">
+      Sign in through the SMART sandbox to access the dashboard.
+    </p>
+
+    <p>
+      <a class="button-link" href="./launch.html">
+        Sign in as a provider
+      </a>
+    </p>
+  </section>
+
+  <!-- MAIN DASHBOARD -->
+  <section id="dashboard" hidden>
+
+    <div id="connection-status" class="status" role="status">
+      Connecting...
+    </div>
+
+    <!-- PATIENT SEARCH -->
+    <section class="panel">
+      <h2>Find a Patient</h2>
+
+      <form id="patient-search-form">
+        <div class="search-row">
+
+          <input
+            id="patient-search"
+            type="search"
+            placeholder="Enter patient's first or last name"
+            autocomplete="off"
+            required
+          >
+
+          <button id="search-button" type="submit">
+            Search Patients
+          </button>
+
+          <button id="browse-button" type="button">
+            Browse Test Patients
+          </button>
+
+        </div>
+      </form>
+
+      <p id="search-message" class="muted" role="status">
+        Search for a patient or browse existing sandbox patients.
+      </p>
+
+      <div
+        id="patient-results"
+        class="result-list"
+        aria-live="polite">
       </div>
-
-      <section class="panel" aria-labelledby="search-heading">
-        <h2 id="search-heading">Find a patient</h2>
-
-        <form id="patient-search-form">
-          <div class="search-row">
-            <input
-              id="patient-search"
-              type="search"
-              placeholder="Enter the patient's name"
-              autocomplete="off"
-              required
-            >
-            <button id="search-button" type="submit">
-              Search patients
-            </button>
-          </div>
-        </form>
-
-        <p id="search-message" class="muted" role="status">
-          Search the patients available to your authorized provider account.
-        </p>
-
-        <div id="patient-results" class="result-list" aria-live="polite"></div>
-      </section>
-
-      <section id="selected-patient-panel" class="panel" hidden>
-        <h2>Selected patient</h2>
-        <div id="patient-summary" class="grid"></div>
-      </section>
-
-      <section id="encounters-panel" class="panel" hidden>
-        <h2>Encounter history</h2>
-        <p class="muted">
-          Separate encounter records are kept distinct. The encounter's class,
-          type, organization, dates, and reason references are shown as recorded.
-        </p>
-        <div id="encounter-list" class="record-list"></div>
-      </section>
-
-      <section id="conditions-panel" class="panel" hidden>
-        <h2>Diagnoses and conditions</h2>
-        <p class="muted">
-          Provisional and confirmed diagnoses remain separate records; the
-          verification status is displayed from the FHIR resource.
-        </p>
-        <div id="condition-list" class="record-list"></div>
-      </section>
     </section>
 
-    <footer>
-      Read-only demonstration. No patient records are created, updated, or deleted.
-    </footer>
-  </main>
+    <!-- SELECTED PATIENT -->
+    <section id="selected-patient-panel" class="panel" hidden>
+      <h2>Selected Patient</h2>
+      <div id="patient-summary" class="grid"></div>
+    </section>
 
-  <script>
-    "use strict";
+    <!-- ENCOUNTER RECORDS -->
+    <section id="encounters-panel" class="panel" hidden>
+      <h2>Encounter History</h2>
 
-    (function () {
-      const loginPanel = document.getElementById("login-panel");
-      const dashboard = document.getElementById("dashboard");
-      const loginMessage = document.getElementById("login-message");
-      const connectionStatus = document.getElementById("connection-status");
-      const searchForm = document.getElementById("patient-search-form");
-      const searchInput = document.getElementById("patient-search");
-      const searchButton = document.getElementById("search-button");
-      const searchMessage = document.getElementById("search-message");
-      const patientResults = document.getElementById("patient-results");
+      <p class="muted">
+        EMS and hospital encounters are displayed as separate records.
+        Encounter dates, status, class, organization, and reason references
+        are shown when available.
+      </p>
 
-      let fhirClient = null;
+      <div id="encounter-list" class="record-list"></div>
+    </section>
 
-      function showLogin(message) {
-        dashboard.hidden = true;
-        loginPanel.hidden = false;
-        loginMessage.textContent = message;
-      }
+    <!-- CONDITION RECORDS -->
+    <section id="conditions-panel" class="panel" hidden>
+      <h2>Diagnoses and Conditions</h2>
 
-      function showStatus(node, message, isError) {
-        node.textContent = message;
-        node.classList.toggle("error", Boolean(isError));
-      }
+      <p class="muted">
+        Provisional and confirmed diagnoses remain separate records.
+        Verification status is displayed from the FHIR resource.
+      </p>
 
-      function getBundleEntries(response) {
-        if (!response) return [];
+      <div id="condition-list" class="record-list"></div>
+    </section>
 
-        if (Array.isArray(response)) {
-          return response.reduce(
-            (all, page) => all.concat(getBundleEntries(page)),
-            []
-          );
-        }
+  </section>
 
-        if (
-          response.resourceType === "Bundle" &&
-          Array.isArray(response.entry)
-        ) {
-          return response.entry
-            .map(entry => entry.resource)
-            .filter(Boolean);
-        }
+</main>
 
-        return [];
-      }
+<footer>
+  Read-only demonstration. No patient records are created, changed, or deleted.
+</footer>
 
-      function getName(patient) {
-        const names = Array.isArray(patient.name) ? patient.name : [];
-        const name = names.find(item => item.use === "official") || names[0];
+<script>
+"use strict";
 
-        if (!name) return "Name not recorded";
-        if (name.text) return name.text;
+(function () {
 
-        const given = Array.isArray(name.given)
-          ? name.given.join(" ")
-          : "";
+  const loginPanel = document.getElementById("login-panel");
+  const dashboard = document.getElementById("dashboard");
+  const loginMessage = document.getElementById("login-message");
+  const connectionStatus = document.getElementById("connection-status");
 
-        return (
-          given + " " + (name.family || "")
-        ).trim() || "Name not recorded";
-      }
+  const searchForm = document.getElementById("patient-search-form");
+  const searchInput = document.getElementById("patient-search");
+  const searchButton = document.getElementById("search-button");
+  const browseButton = document.getElementById("browse-button");
 
-      function formatDate(value) {
-        if (!value) return "Not recorded";
+  const searchMessage = document.getElementById("search-message");
+  const patientResults = document.getElementById("patient-results");
 
-        const raw = String(value);
-        const dateOnly = /^\d{4}-\d{2}-\d{2}$/.test(raw);
-        const date = new Date(
-          dateOnly ? raw + "T12:00:00" : raw
-        );
+  let fhirClient = null;
 
-        if (Number.isNaN(date.getTime())) return raw;
+  // DISPLAY LOGIN
+  function showLogin(message) {
+    dashboard.hidden = true;
+    loginPanel.hidden = false;
+    loginMessage.textContent = message;
+  }
 
-        return dateOnly
-          ? date.toLocaleDateString()
-          : date.toLocaleString();
-      }
+  // DISPLAY STATUS
+  function showStatus(node, message, isError) {
+    node.textContent = message;
+    node.classList.toggle("error", Boolean(isError));
+  }
 
-      function conceptText(concept) {
-        if (!concept) return "Not recorded";
+  // EXTRACT RESOURCES FROM A FHIR BUNDLE
+  function getBundleEntries(response) {
+    if (!response) return [];
 
-        if (Array.isArray(concept)) {
-          const values = concept
-            .map(conceptText)
-            .filter(value => value !== "Not recorded");
+    if (Array.isArray(response)) {
+      return response.reduce(
+        (all, page) => all.concat(getBundleEntries(page)),
+        []
+      );
+    }
 
-          return values.length
-            ? values.join("; ")
-            : "Not recorded";
-        }
+    if (
+      response.resourceType === "Bundle" &&
+      Array.isArray(response.entry)
+    ) {
+      return response.entry
+        .map(entry => entry.resource)
+        .filter(Boolean);
+    }
 
-        if (concept.text) return concept.text;
+    return [];
+  }
 
-        const coding = Array.isArray(concept.coding)
-          ? concept.coding
-          : [];
+  // FORMAT PATIENT NAME
+  function getName(patient) {
+    const names = Array.isArray(patient.name) ? patient.name : [];
 
-        const values = coding
-          .map(item => item.display || item.code)
-          .filter(Boolean);
+    const name =
+      names.find(item => item.use === "official") ||
+      names[0];
 
-        return values.join("; ") || "Not recorded";
-      }
+    if (!name) return "Name not recorded";
+    if (name.text) return name.text;
 
-      function referenceText(reference) {
-        if (!reference) return "Not recorded";
+    const given = Array.isArray(name.given)
+      ? name.given.join(" ")
+      : "";
 
-        if (Array.isArray(reference)) {
-          return reference.map(referenceText).join("; ");
-        }
+    return (
+      given + " " + (name.family || "")
+    ).trim() || "Name not recorded";
+  }
 
-        return reference.display ||
-          reference.reference ||
-          "Reference present";
-      }
+  // FORMAT DATES
+  function formatDate(value) {
+    if (!value) return "Not recorded";
 
-      function appendField(container, label, value) {
-        const field = document.createElement("div");
-        field.className = "field";
+    const raw = String(value);
+    const dateOnly = /^\d{4}-\d{2}-\d{2}$/.test(raw);
 
-        const heading = document.createElement("strong");
-        heading.textContent = label;
+    const date = new Date(
+      dateOnly ? raw + "T12:00:00" : raw
+    );
 
-        const content = document.createElement("span");
-        content.textContent = value || "Not recorded";
+    if (Number.isNaN(date.getTime())) return raw;
 
-        field.append(heading, content);
-        container.appendChild(field);
-      }
+    return dateOnly
+      ? date.toLocaleDateString()
+      : date.toLocaleString();
+  }
 
-      function makeRecord(title, fields) {
-        const article = document.createElement("article");
-        article.className = "record";
+  // FORMAT CODEABLE CONCEPTS
+  function conceptText(concept) {
+    if (!concept) return "Not recorded";
 
-        const heading = document.createElement("h3");
-        heading.textContent = title;
-        article.appendChild(heading);
+    if (Array.isArray(concept)) {
+      const values = concept
+        .map(conceptText)
+        .filter(value => value !== "Not recorded");
 
-        fields.forEach(([label, value]) => {
-          const line = document.createElement("p");
+      return values.length
+        ? values.join("; ")
+        : "Not recorded";
+    }
 
-          const key = document.createElement("span");
-          key.className = "record-label";
-          key.textContent = label + ": ";
+    if (concept.text) return concept.text;
 
-          const text = document.createElement("span");
-          text.textContent = value || "Not recorded";
+    const coding = Array.isArray(concept.coding)
+      ? concept.coding
+      : [];
 
-          line.append(key, text);
-          article.appendChild(line);
-        });
+    const values = coding
+      .map(item => item.display || item.code)
+      .filter(Boolean);
 
-        return article;
-      }
+    return values.join("; ") || "Not recorded";
+  }
 
-      function renderPatient(patient) {
-        const summary = document.getElementById("patient-summary");
-        summary.replaceChildren();
+  // FORMAT FHIR REFERENCES
+  function referenceText(reference) {
+    if (!reference) return "Not recorded";
 
-        appendField(summary, "Name", getName(patient));
-        appendField(summary, "FHIR Patient ID", patient.id || "Not recorded");
-        appendField(summary, "Date of birth", formatDate(patient.birthDate));
-        appendField(
-          summary,
-          "Administrative gender",
-          patient.gender || "Not recorded"
-        );
+    if (Array.isArray(reference)) {
+      return reference.map(referenceText).join("; ");
+    }
 
-        document.getElementById("selected-patient-panel").hidden = false;
-      }
+    return reference.display ||
+      reference.reference ||
+      "Reference present";
+  }
 
-      function renderEncounters(encounters) {
-        const panel = document.getElementById("encounters-panel");
-        const list = document.getElementById("encounter-list");
+  // ADD PATIENT INFORMATION FIELD
+  function appendField(container, label, value) {
+    const field = document.createElement("div");
+    field.className = "field";
 
-        list.replaceChildren();
-        panel.hidden = false;
+    const heading = document.createElement("strong");
+    heading.textContent = label;
 
-        encounters.sort((a, b) =>
-          String((b.period || {}).start || "").localeCompare(
-            String((a.period || {}).start || "")
+    const content = document.createElement("span");
+    content.textContent = value || "Not recorded";
+
+    field.append(heading, content);
+    container.appendChild(field);
+  }
+
+  // CREATE RECORD DISPLAY
+  function makeRecord(title, fields) {
+    const article = document.createElement("article");
+    article.className = "record";
+
+    const heading = document.createElement("h3");
+    heading.textContent = title;
+
+    article.appendChild(heading);
+
+    fields.forEach(([label, value]) => {
+      const line = document.createElement("p");
+
+      const key = document.createElement("span");
+      key.className = "record-label";
+      key.textContent = label + ": ";
+
+      const text = document.createElement("span");
+      text.textContent = value || "Not recorded";
+
+      line.append(key, text);
+      article.appendChild(line);
+    });
+
+    return article;
+  }
+
+  // DISPLAY PATIENT
+  function renderPatient(patient) {
+    const summary = document.getElementById("patient-summary");
+
+    summary.replaceChildren();
+
+    appendField(summary, "Name", getName(patient));
+    appendField(summary, "FHIR Patient ID", patient.id);
+    appendField(summary, "Date of Birth", formatDate(patient.birthDate));
+    appendField(
+      summary,
+      "Administrative Gender",
+      patient.gender
+    );
+
+    document.getElementById("selected-patient-panel").hidden = false;
+  }
+
+  // DISPLAY ENCOUNTERS
+  function renderEncounters(encounters) {
+    const panel = document.getElementById("encounters-panel");
+    const list = document.getElementById("encounter-list");
+
+    list.replaceChildren();
+    panel.hidden = false;
+
+    encounters.sort((a, b) =>
+      String((b.period || {}).start || "").localeCompare(
+        String((a.period || {}).start || "")
+      )
+    );
+
+    if (!encounters.length) {
+      list.textContent =
+        "No encounter records were returned for this patient.";
+      return;
+    }
+
+    encounters.forEach(encounter => {
+
+      const classText = encounter.class
+        ? (
+            encounter.class.display ||
+            encounter.class.code ||
+            "Not recorded"
           )
-        );
+        : "Not recorded";
 
-        if (!encounters.length) {
-          list.textContent =
-            "No encounter records were returned for this patient.";
-          return;
-        }
+      const types = conceptText(encounter.type);
 
-        encounters.forEach(encounter => {
-          const classText = encounter.class
-            ? (
-                encounter.class.display ||
-                encounter.class.code ||
-                "Not recorded"
+      const title = types !== "Not recorded"
+        ? types
+        : "Encounter Record";
+
+      list.appendChild(
+        makeRecord(title, [
+          ["FHIR Encounter ID", encounter.id],
+          ["Status", encounter.status],
+          ["Class", classText],
+          [
+            "Start",
+            formatDate(encounter.period && encounter.period.start)
+          ],
+          [
+            "End",
+            formatDate(encounter.period && encounter.period.end)
+          ],
+          [
+            "Service Provider",
+            referenceText(encounter.serviceProvider)
+          ],
+          ["Reason Code", conceptText(encounter.reasonCode)],
+          [
+            "Reason Reference",
+            referenceText(encounter.reasonReference)
+          ]
+        ])
+      );
+    });
+  }
+
+  // DISPLAY CONDITIONS
+  function renderConditions(conditions) {
+    const panel = document.getElementById("conditions-panel");
+    const list = document.getElementById("condition-list");
+
+    list.replaceChildren();
+    panel.hidden = false;
+
+    conditions.sort((a, b) =>
+      String(b.recordedDate || b.onsetDateTime || "").localeCompare(
+        String(a.recordedDate || a.onsetDateTime || "")
+      )
+    );
+
+    if (!conditions.length) {
+      list.textContent =
+        "No condition records were returned for this patient.";
+      return;
+    }
+
+    conditions.forEach(condition => {
+
+      const title = conceptText(condition.code);
+
+      list.appendChild(
+        makeRecord(
+          title === "Not recorded" ? "Condition Record" : title,
+          [
+            ["FHIR Condition ID", condition.id],
+            [
+              "Clinical Status",
+              conceptText(condition.clinicalStatus)
+            ],
+            [
+              "Verification Status",
+              conceptText(condition.verificationStatus)
+            ],
+            ["Category", conceptText(condition.category)],
+            ["Recorded Date", formatDate(condition.recordedDate)],
+            [
+              "Onset",
+              formatDate(
+                condition.onsetDateTime ||
+                condition.onsetString ||
+                (
+                  condition.onsetPeriod &&
+                  condition.onsetPeriod.start
+                )
               )
-            : "Not recorded";
+            ],
+            [
+              "Encounter Reference",
+              referenceText(condition.encounter)
+            ]
+          ]
+        )
+      );
+    });
+  }
 
-          const types = conceptText(encounter.type);
-          const title = types !== "Not recorded"
-            ? types
-            : "Encounter record";
+  // LOAD A SELECTED PATIENT'S RECORDS
+  async function loadPatientRecords(patient) {
 
-          list.appendChild(
-            makeRecord(title, [
-              ["FHIR Encounter ID", encounter.id || "Not recorded"],
-              ["Status", encounter.status || "Not recorded"],
-              ["Class", classText],
-              [
-                "Start",
-                formatDate(encounter.period && encounter.period.start)
-              ],
-              [
-                "End",
-                formatDate(encounter.period && encounter.period.end)
-              ],
-              ["Service provider", referenceText(encounter.serviceProvider)],
-              ["Reason code", conceptText(encounter.reasonCode)],
-              ["Reason reference", referenceText(encounter.reasonReference)]
-            ])
-          );
-        });
-      }
+    renderPatient(patient);
 
-      function renderConditions(conditions) {
-        const panel = document.getElementById("conditions-panel");
-        const list = document.getElementById("condition-list");
+    showStatus(
+      connectionStatus,
+      "SMART connected · Loading records for " + getName(patient) + "...",
+      false
+    );
 
-        list.replaceChildren();
-        panel.hidden = false;
+    document.getElementById("encounters-panel").hidden = false;
+    document.getElementById("conditions-panel").hidden = false;
 
-        conditions.sort((a, b) =>
-          String(b.recordedDate || b.onsetDateTime || "").localeCompare(
-            String(a.recordedDate || a.onsetDateTime || "")
-          )
+    document.getElementById("encounter-list").textContent =
+      "Loading encounters...";
+
+    document.getElementById("condition-list").textContent =
+      "Loading conditions...";
+
+    const patientId = encodeURIComponent(patient.id);
+
+    const results = await Promise.allSettled([
+
+      fhirClient.request(
+        "Encounter?patient=" + patientId + "&_count=50"
+      ),
+
+      fhirClient.request(
+        "Condition?patient=" + patientId + "&_count=50"
+      )
+
+    ]);
+
+    if (results[0].status === "fulfilled") {
+      renderEncounters(
+        getBundleEntries(results[0].value)
+      );
+    } else {
+      document.getElementById("encounter-list").textContent =
+        "Could not load encounters: " +
+        (
+          results[0].reason.message ||
+          String(results[0].reason)
         );
+    }
 
-        if (!conditions.length) {
-          list.textContent =
-            "No condition records were returned for this patient.";
-          return;
-        }
-
-        conditions.forEach(condition => {
-          const title = conceptText(condition.code);
-
-          list.appendChild(
-            makeRecord(
-              title === "Not recorded" ? "Condition record" : title,
-              [
-                ["FHIR Condition ID", condition.id || "Not recorded"],
-                ["Clinical status", conceptText(condition.clinicalStatus)],
-                [
-                  "Verification status",
-                  conceptText(condition.verificationStatus)
-                ],
-                ["Category", conceptText(condition.category)],
-                ["Recorded date", formatDate(condition.recordedDate)],
-                [
-                  "Onset",
-                  formatDate(
-                    condition.onsetDateTime ||
-                    condition.onsetString ||
-                    (
-                      condition.onsetPeriod &&
-                      condition.onsetPeriod.start
-                    )
-                  )
-                ],
-                ["Encounter reference", referenceText(condition.encounter)]
-              ]
-            )
-          );
-        });
-      }
-
-      async function loadPatientRecords(patient) {
-        renderPatient(patient);
-
-        showStatus(
-          connectionStatus,
-          "SMART connected · Loading records for " + getName(patient) + "…",
-          false
+    if (results[1].status === "fulfilled") {
+      renderConditions(
+        getBundleEntries(results[1].value)
+      );
+    } else {
+      document.getElementById("condition-list").textContent =
+        "Could not load conditions: " +
+        (
+          results[1].reason.message ||
+          String(results[1].reason)
         );
+    }
 
-        document.getElementById("encounters-panel").hidden = false;
-        document.getElementById("conditions-panel").hidden = false;
+    showStatus(
+      connectionStatus,
+      "SMART connected · Read-only records displayed for " +
+      getName(patient) + ".",
+      false
+    );
+  }
 
-        document.getElementById("encounter-list").textContent =
-          "Loading encounters…";
+  // DISPLAY PATIENT SEARCH RESULTS
+  function displayPatients(patients) {
+    patientResults.replaceChildren();
 
-        document.getElementById("condition-list").textContent =
-          "Loading conditions…";
+    if (!patients.length) {
+      showStatus(
+        searchMessage,
+        "No patients were returned. Try another name or browse the sandbox.",
+        false
+      );
+      return;
+    }
 
-        const patientId = encodeURIComponent(patient.id);
+    showStatus(
+      searchMessage,
+      "Found " + patients.length +
+      " patient(s). Select one to view their records.",
+      false
+    );
 
-        const results = await Promise.allSettled([
-          fhirClient.request(
-            "Encounter?patient=" + patientId + "&_count=50"
-          ),
-          fhirClient.request(
-            "Condition?patient=" + patientId + "&_count=50"
-          )
-        ]);
+    patients.forEach(patient => {
 
-        if (results[0].status === "fulfilled") {
-          renderEncounters(getBundleEntries(results[0].value));
-        } else {
-          document.getElementById("encounter-list").textContent =
-            "Could not load encounters: " +
-            (
-              results[0].reason.message ||
-              String(results[0].reason)
-            );
-        }
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "patient-result";
 
-        if (results[1].status === "fulfilled") {
-          renderConditions(getBundleEntries(results[1].value));
-        } else {
-          document.getElementById("condition-list").textContent =
-            "Could not load conditions: " +
-            (
-              results[1].reason.message ||
-              String(results[1].reason)
-            );
-        }
+      const name = document.createElement("strong");
+      name.textContent = getName(patient);
 
-        showStatus(
-          connectionStatus,
-          "SMART connected · Read-only records displayed for " +
-          getName(patient) + ".",
-          false
-        );
-      }
+      const details = document.createElement("span");
 
-      async function searchPatients(searchText) {
-        patientResults.replaceChildren();
-        showStatus(searchMessage, "Searching…", false);
-        searchButton.disabled = true;
+      details.textContent =
+        " · ID: " + (patient.id || "not available") +
+        " · DOB: " + formatDate(patient.birthDate);
 
-        try {
-          const result = await fhirClient.request(
-            "Patient?name=" +
-            encodeURIComponent(searchText) +
-            "&_count=25"
-          );
+      button.append(name, details);
 
-          const patients = getBundleEntries(result);
-
-          if (!patients.length) {
-            showStatus(
-              searchMessage,
-              "No matching patients were found. Check the spelling and try again.",
-              false
-            );
-            return;
-          }
-
+      button.addEventListener("click", () => {
+        loadPatientRecords(patient).catch(error => {
           showStatus(
-            searchMessage,
-            patients.length +
-            " patient result(s). Select the correct patient to view their records.",
-            false
-          );
-
-          patients.forEach(patient => {
-            const button = document.createElement("button");
-            button.type = "button";
-            button.className = "patient-result";
-
-            const name = document.createElement("strong");
-            name.textContent = getName(patient);
-
-            const details = document.createElement("span");
-            details.textContent =
-              " · ID: " + (patient.id || "not available") +
-              " · DOB: " + formatDate(patient.birthDate);
-
-            button.append(name, details);
-
-            button.addEventListener("click", () => {
-              loadPatientRecords(patient).catch(error => {
-                showStatus(
-                  connectionStatus,
-                  "Could not load this patient's records: " +
-                  (error.message || String(error)),
-                  true
-                );
-              });
-            });
-
-            patientResults.appendChild(button);
-          });
-        } catch (error) {
-          showStatus(
-            searchMessage,
-            "Patient search failed: " +
+            connectionStatus,
+            "Could not load patient records: " +
             (error.message || String(error)),
             true
           );
-        } finally {
-          searchButton.disabled = false;
-        }
-      }
-
-      searchForm.addEventListener("submit", event => {
-        event.preventDefault();
-
-        const text = searchInput.value.trim();
-
-        if (text) {
-          searchPatients(text);
-        }
+        });
       });
 
-      const params = new URLSearchParams(window.location.search);
+      patientResults.appendChild(button);
+    });
+  }
 
-      const returnedFromAuthorization =
-        params.has("code") ||
-        params.has("error") ||
-        params.has("state");
+  // SEARCH PATIENTS BY NAME
+  async function searchPatients(searchText) {
 
-      if (!window.FHIR || !FHIR.oauth2) {
-        showLogin(
-          "The SMART client library did not load. Check your internet connection, then reload this page."
+    patientResults.replaceChildren();
+
+    showStatus(searchMessage, "Searching patients...", false);
+
+    searchButton.disabled = true;
+    browseButton.disabled = true;
+
+    try {
+
+      const result = await fhirClient.request(
+        "Patient?name=" +
+        encodeURIComponent(searchText) +
+        "&_count=25"
+      );
+
+      const patients = getBundleEntries(result);
+
+      displayPatients(patients);
+
+    } catch (error) {
+
+      showStatus(
+        searchMessage,
+        "Patient search failed: " +
+        (error.message || String(error)),
+        true
+      );
+
+    } finally {
+
+      searchButton.disabled = false;
+      browseButton.disabled = false;
+
+    }
+  }
+
+  // BROWSE EXISTING SANDBOX PATIENTS
+  async function browsePatients() {
+
+    patientResults.replaceChildren();
+
+    showStatus(
+      searchMessage,
+      "Loading available sandbox patients...",
+      false
+    );
+
+    browseButton.disabled = true;
+    searchButton.disabled = true;
+
+    try {
+
+      const result = await fhirClient.request(
+        "Patient?_count=25"
+      );
+
+      const patients = getBundleEntries(result);
+
+      if (!patients.length) {
+
+        showStatus(
+          searchMessage,
+          "No patients were returned by the sandbox.",
+          false
         );
+
         return;
       }
 
-      FHIR.oauth2.ready()
-        .then(client => {
-          fhirClient = client;
-          loginPanel.hidden = true;
-          dashboard.hidden = false;
+      displayPatients(patients);
 
-          showStatus(
-            connectionStatus,
-            "SMART connected. Search for a patient to begin.",
-            false
-          );
-        })
-        .catch(error => {
-          const detail = error && error.message
-            ? error.message
-            : String(error);
+      showStatus(
+        searchMessage,
+        "Showing available test patients. Select one to view their records.",
+        false
+      );
 
-          showLogin(
-            returnedFromAuthorization
-              ? "Provider sign-in did not complete: " + detail
-              : "You are not signed in yet. Use the provider sign-in button to connect to the SMART sandbox."
-          );
-        });
-    })();
-  </script>
+    } catch (error) {
+
+      showStatus(
+        searchMessage,
+        "Could not browse patients: " +
+        (error.message || String(error)),
+        true
+      );
+
+    } finally {
+
+      browseButton.disabled = false;
+      searchButton.disabled = false;
+
+    }
+  }
+
+  // SEARCH FORM EVENT
+  searchForm.addEventListener("submit", event => {
+
+    event.preventDefault();
+
+    const text = searchInput.value.trim();
+
+    if (text) {
+      searchPatients(text);
+    }
+
+  });
+
+  // BROWSE BUTTON EVENT
+  browseButton.addEventListener("click", browsePatients);
+
+  // SMART AUTHENTICATION
+  const params = new URLSearchParams(window.location.search);
+
+  const returnedFromAuthorization =
+    params.has("code") ||
+    params.has("error") ||
+    params.has("state");
+
+  if (!window.FHIR || !FHIR.oauth2) {
+
+    showLogin(
+      "The SMART client library did not load. Check your internet connection and reload this page."
+    );
+
+    return;
+  }
+
+  FHIR.oauth2.ready()
+
+    .then(client => {
+
+      fhirClient = client;
+
+      loginPanel.hidden = true;
+      dashboard.hidden = false;
+
+      showStatus(
+        connectionStatus,
+        "SMART connected. Search or browse for a patient to begin.",
+        false
+      );
+
+    })
+
+    .catch(error => {
+
+      const detail = error && error.message
+        ? error.message
+        : String(error);
+
+      showLogin(
+
+        returnedFromAuthorization
+          ? "Provider sign-in did not complete: " + detail
+          : "You are not signed in. Use the provider sign-in button to connect to the SMART sandbox."
+
+      );
+
+    });
+
+})();
+</script>
+
 </body>
 </html>
