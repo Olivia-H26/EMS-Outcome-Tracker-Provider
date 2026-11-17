@@ -3,10 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-
   <title>EMS Outcome Tracker | Provider Sign In</title>
 
-  <!-- SMART on FHIR JavaScript Client -->
   <script src="https://cdn.jsdelivr.net/npm/fhirclient@3.0.1/bundle/fhir-client.js"></script>
 
   <style>
@@ -29,17 +27,12 @@
       padding: 2rem;
       border-radius: 12px;
       border: 1px solid #dce3ea;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.04);
+      box-shadow: 0 4px 15px rgba(0,0,0,.04);
     }
 
     h1 {
       color: #173b57;
-      margin-bottom: 0.25rem;
-    }
-
-    h2 {
-      font-size: 1.1rem;
-      color: #40566b;
+      margin-bottom: .25rem;
     }
 
     .subtitle {
@@ -64,191 +57,123 @@
     #retry {
       display: none;
       margin-top: 1rem;
-      padding: 0.8rem 1.2rem;
+      padding: .8rem 1.2rem;
       background: #173b57;
       color: white;
-      border: none;
+      border: 0;
       border-radius: 7px;
       cursor: pointer;
       font-size: 1rem;
-    }
-
-    footer {
-      margin-top: 1.5rem;
-      color: #64748b;
-      font-size: 0.85rem;
     }
   </style>
 </head>
 
 <body>
+  <main>
+    <h1>EMS Outcome Tracker</h1>
 
-<main>
+    <p><strong>Provider sign in</strong></p>
 
-  <h1>EMS Outcome Tracker</h1>
+    <p class="subtitle">
+      Secure provider access to the read-only EMS-to-hospital
+      clinical continuity dashboard.
+    </p>
 
-  <h2>Provider Sign In</h2>
+    <p class="status" id="status" role="status">
+      Preparing SMART authentication…
+    </p>
 
-  <p class="subtitle">
-    Secure provider access to the EMS-to-hospital
-    clinical continuity dashboard.
-  </p>
+    <p id="error" role="alert" hidden></p>
 
-  <p class="status" id="status" role="status">
-    Preparing SMART authentication...
-  </p>
+    <button
+      id="retry"
+      type="button"
+      onclick="startAuthorization()"
+    >
+      Retry sign in
+    </button>
+  </main>
 
-  <p id="error" role="alert" hidden></p>
+  <script>
+    "use strict";
 
-  <button id="retry" type="button" onclick="startAuthorization()">
-    Retry Sign In
-  </button>
+    const FHIR_SERVER =
+      "https://launch.smarthealthit.org/v/r4/sim/WzIsIiIsIiIsIk1BTlVBTCIsMCwwLDAsIiIsIiIsIiIsIiIsIiIsIiIsIiIsMCwyLCIiXQ/fhir";
 
-  <footer>
-    FHIR R4 4.0.1 · US Core 6.1.0 ·
-    SMART App Launch 2.2.0
-  </footer>
+    const CLIENT_ID = "my_web_app";
 
-</main>
+    const REDIRECT_URI =
+      new URL("index.html", window.location.href).href;
 
-<script>
-"use strict";
+    // Read-only SMART scopes for provider access.
+    const SCOPES = [
+      "openid",
+      "fhirUser",
+      "user/Patient.read",
+      "user/Encounter.read",
+      "user/Condition.read"
+    ].join(" ");
 
-// =============================================
-// EMS OUTCOME TRACKER
-// Provider-facing SMART application
-// FHIR R4 4.0.1
-// SMART App Launch 2.2.0
-// =============================================
+    function setStatus(message) {
+      document.getElementById("status").textContent = message;
+    }
 
+    function showError(message) {
+      const node = document.getElementById("error");
 
-// 1. FHIR SERVER
-// Preserve the SMART Health IT R4 server
-// configured in your original application.
+      node.hidden = false;
+      node.textContent = message;
 
-const FHIR_SERVER =
-  "https://launch.smarthealthit.org/v/r4/sim/WzIsIiIsIiIsIk1BTlVBTCIsMCwwLDAsIiIsIiIsIiIsIiIsIiIsIiIsIiIsMCwyLCIiXQ/fhir";
+      document.getElementById("retry").style.display =
+        "inline-block";
+    }
 
+    function startAuthorization() {
+      document.getElementById("error").hidden = true;
 
-// 2. APPLICATION CLIENT ID
-// This MUST match your registered SMART application.
-// Do not invent a new client ID here.
+      document.getElementById("retry").style.display =
+        "none";
 
-const CLIENT_ID = "my_web_app";
+      setStatus(
+        "Connecting to the SMART Health IT FHIR R4 sandbox…"
+      );
 
+      if (
+        !window.FHIR ||
+        !FHIR.oauth2 ||
+        typeof FHIR.oauth2.authorize !== "function"
+      ) {
+        showError(
+          "The SMART JavaScript client could not be loaded. Check your internet connection and reload this page."
+        );
+        return;
+      }
 
-// 3. REDIRECT URI
-// The authorization response returns to index.html.
+      FHIR.oauth2.authorize({
+        clientId: CLIENT_ID,
+        scope: SCOPES,
+        redirectUri: REDIRECT_URI,
+        iss: FHIR_SERVER,
+        pkceMode: "required"
+      }).catch(error => {
+        console.error("SMART authorization error:", error);
 
-const REDIRECT_URI = new URL(
-  "index.html",
-  window.location.href
-).href;
+        setStatus(
+          "Provider authorization could not be started."
+        );
 
+        showError(
+          error && error.message
+            ? error.message
+            : String(error)
+        );
+      });
+    }
 
-// 4. SMART AUTHORIZATION SCOPES
-// Provider-level read/search access.
-// No write permissions are requested.
-
-const SCOPES = [
-  "openid",
-  "fhirUser",
-  "user/Patient.rs",
-  "user/Encounter.rs",
-  "user/Condition.rs"
-].join(" ");
-
-
-// 5. DISPLAY STATUS
-
-function setStatus(message) {
-  document.getElementById("status").textContent = message;
-}
-
-function showError(message) {
-  const errorNode = document.getElementById("error");
-
-  errorNode.hidden = false;
-  errorNode.textContent = message;
-
-  document.getElementById("retry").style.display = "inline-block";
-}
-
-
-// 6. START SMART PROVIDER AUTHORIZATION
-
-function startAuthorization() {
-
-  const errorNode = document.getElementById("error");
-
-  errorNode.hidden = true;
-  errorNode.textContent = "";
-
-  document.getElementById("retry").style.display = "none";
-
-  setStatus("Connecting to SMART Health IT FHIR R4...");
-
-  // Verify that the SMART JavaScript library loaded.
-
-  if (
-    !window.FHIR ||
-    !window.FHIR.oauth2 ||
-    typeof window.FHIR.oauth2.authorize !== "function"
-  ) {
-    setStatus("SMART authentication library unavailable.");
-
-    showError(
-      "Unable to load the SMART JavaScript client. " +
-      "Check your internet connection and reload the page."
+    document.addEventListener(
+      "DOMContentLoaded",
+      startAuthorization
     );
-
-    return;
-  }
-
-  // Begin standalone provider authorization.
-
-  FHIR.oauth2.authorize({
-
-    clientId: CLIENT_ID,
-
-    scope: SCOPES,
-
-    redirectUri: REDIRECT_URI,
-
-    iss: FHIR_SERVER,
-
-    // Require PKCE using the S256 method
-    // supported by the SMART client.
-
-    pkceMode: "required"
-
-  }).catch(function(error) {
-
-    console.error("SMART authorization error:", error);
-
-    setStatus("Provider authorization could not be started.");
-
-    showError(
-      error && error.message
-        ? error.message
-        : String(error)
-    );
-
-  });
-}
-
-
-// 7. INITIALIZE APPLICATION
-
-document.addEventListener("DOMContentLoaded", function() {
-
-  setStatus("Preparing secure provider authentication...");
-
-  startAuthorization();
-
-});
-
-</script>
-
+  </script>
 </body>
 </html>
