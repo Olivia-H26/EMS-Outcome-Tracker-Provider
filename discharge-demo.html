@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EMS Outcome Tracker - Discharge Test</title>
+<script src="https://cdn.jsdelivr.net/npm/fhirclient@3.0.1/bundle/fhir-client.js"></script>
+<style>
+body {
+  font-family: system-ui, sans-serif;
+  max-width: 700px;
+  margin: 35px auto;
+  padding: 20px;
+  color: #243447;
+  background: #f3f6f9;
+}
+main {
+  background: white;
+  padding: 25px;
+  border: 1px solid #d9e2ea;
+  border-radius: 12px;
+}
+h1 { color: #173b57; }
+button {
+  padding: 12px 18px;
+  background: #235d82;
+  color: white;
+  border: 0;
+  border-radius: 7px;
+  cursor: pointer;
+  margin-top: 12px;
+  font-size: 15px;
+}
+button:disabled { opacity: .5; }
+pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  background: #edf3f7;
+  padding: 15px;
+  border-radius: 7px;
+}
+.warning {
+  background: #fff3e8;
+  padding: 12px;
+  border-radius: 7px;
+}
+</style>
+</head>
+
+<body>
+<main>
+<h1>EMS Outcome Tracker</h1>
+<h2>Hospital Discharge Demonstration</h2>
+
+<p>
+This page updates the existing synthetic hospital encounter
+for Antonio Carmona.
+</p>
+
+<p class="warning">
+This demonstration will mark the hospital encounter as finished,
+set the discharge time to the current time, and record discharge home.
+It does not change the EMS encounter or either diagnosis.
+</p>
+
+<p id="status">Preparing authorization...</p>
+
+<button id="authorize" hidden>
+Authorize hospital discharge update
+</button>
+
+<button id="discharge" hidden>
+Mark hospital encounter discharged home
+</button>
+
+<pre id="results">Waiting...</pre>
+</main>
+
+<script>
+"use strict";
+
+const SERVER =
+"https://launch.smarthealthit.org/v/r4/sim/WzIsIiIsIiIsIk1BTlVBTCIsMCwwLDAsIiIsIiIsIiIsIiIsIiIsIiIsIiIsMCwyLCIiXQ/fhir";
+
+const CLIENT_ID = "my_web_app";
+
+const REDIRECT_URI =
+window.location.origin + window.location.pathname;
+
+const PATIENT_ID =
+"845ac958-8036-45ee-9112-eac31d9b4f30";
+
+const EMS_ENCOUNTER_ID = "4949143";
+const EMS_CONDITION_ID = "4949144";
+const HOSPITAL_ENCOUNTER_ID = "4949145";
+const HOSPITAL_CONDITION_ID = "4949146";
+
+const DEMO_SYSTEM =
+"https://olivia-h26.github.io/EMS-Outcome-Tracker-Provider/demo";
+
+const SCOPES = [
+  "openid",
+  "fhirUser",
+  "user/Encounter.ru",
+  "user/Condition.r"
+].join(" ");
+
+const status = document.getElementById("status");
+const results = document.getElementById("results");
+const authorizeButton = document.getElementById("authorize");
+const dischargeButton = document.getElementById("discharge");
+
+let client = null;
+let updateStarted = false;
+
+function write(message) {
+  results.textContent += message + "\n";
+}
+
+function hasDemoTag(resource) {
+  return (resource.meta?.tag || []).some(tag =>
+    tag.system === DEMO_SYSTEM &&
+    tag.code === "synthetic-demo"
+  );
+}
+
+function verifyPatient(resource, type, id) {
+  if (resource.resourceType !== type || resource.id !== id) {
+    throw new Error("Unexpected resource returned: " + type + "/" + id);
+  }
+
+  if (resource.subject?.reference !== "Patient/" + PATIENT_ID) {
+    throw new Error(type + "/" + id + " belongs to another patient.");
+  }
+
+  if (!hasDemoTag(resource)) {
+    throw new Error(type + "/" + id + " is not tagged as synthetic demo data.");
+  }
+}
+
+function hasVerification(resource, code) {
+  return (resource.verificationStatus?.coding || [])
+    .some(item => item.code === code);
+}
+
+function authorize() {
+  FHIR.oauth2.authorize({
+    clientId: CLIENT_ID,
+    scope: SCOPES,
+    redirectUri: REDIRECT_URI,
+    iss: SERVER,
+    pkceMode: "required"
+  }).catch(error => {
+    status.textContent = "Authorization failed.";
+    write(error.message || String(error));
+  });
+}
+
+authorizeButton.addEventListener("click", authorize);
+
+async function dischargePatient() {
+  if (updateStarted) return;
+
+  updateStarted = true;
+  dischargeButton.disabled = true;
+  results.textContent = "";
+
+  status.textContent = "Checking the test records...";
+
+  try {
+    // Read the four resources before changing anything.
+    const emsEncounter = await client.request(
+      "Encounter/" + EMS_ENCOUNTER_ID
+    );
+
+    const emsCondition = await client.request(
+      "Condition/" + EMS_CONDITION_ID
+    );
+
+    const hospitalEncounter = await client.request(
+      "Encounter/" + HOSPITAL_ENCOUNTER_ID
+    );
+
+    const hospitalCondition = await client.request(
+      "Condition/" + HOSPITAL_CONDITION_ID
+    );
+
+    // Confirm that all records belong to this synthetic scenario.
+    verifyPatient(emsEncounter, "Encounter", EMS_ENCOUNTER_ID);
+    verifyPatient(emsCondition, "Condition", EMS_CONDITION_ID);
+    verifyPatient(hospitalEncounter, "Encounter", HOSPITAL_ENCOUNTER_ID);
+    verifyPatient(hospitalCondition, "Condition", HOSPITAL_CONDITION_ID);
+
+    if (emsEncounter.class?.code !== "EMER") {
+      throw new Error("EMS encounter verification failed.");
+    }
+
+    if (emsCondition.encounter?.reference !==
+        "Encounter/" + EMS_ENCOUNTER_ID ||
+        !hasVerification(emsCondition, "provisional")) {
+      throw new Error("EMS provisional diagnosis verification failed.");
+    }
+
+    if (hospitalEncounter.class?.code !== "IMP") {
+      throw new Error("Hospital encounter verification failed.");
+    }
+
+    const referencesEMS =
+      (hospitalEncounter.reasonReference || []).some(item =>
+        item.reference === "Condition/" + EMS_CONDITION_ID
+      );
+
+    if (!referencesEMS) {
+      throw new Error("Hospital encounter does not reference the EMS diagnosis.");
+    }
+
+    if (hospitalCondition.encounter?.reference !==
+        "Encounter/" + HOSPITAL_ENCOUNTER_ID ||
+        !hasVerification(hospitalCondition, "confirmed")) {
+      throw new Error("Hospital confirmed diagnosis verification failed.");
+    }
+
+    // Do not repeat an update if already discharged correctly.
+    const existingDisposition =
+      hospitalEncounter.hospitalization?.dischargeDisposition?.coding || [];
+
+    const alreadyHome = existingDisposition.some(item =>
+      item.system === "http://www.nubc.org/patient-discharge" &&
+      item.code === "01"
+    );
+
+    if (
+      hospitalEncounter.status === "finished" &&
+      hospitalEncounter.period?.end &&
+      alreadyHome
+    ) {
+      write("This encounter is already marked discharged home.");
+      write("Hospital Encounter: " + HOSPITAL_ENCOUNTER_ID);
+      status.textContent = "Discharge already recorded.";
+      return;
+    }
+
+    if (hospitalEncounter.status !== "in-progress") {
+      throw new Error(
+        "Hospital encounter is not in-progress. No update was made."
+      );
+    }
+
+    const startTime =
+      Date.parse(hospitalEncounter.period?.start || "");
+
+    const dischargeTime = new Date();
+
+    if (!Number.isFinite(startTime) ||
+        dischargeTime.getTime() <= startTime) {
+      throw new Error(
+        "The discharge time must be after the hospital encounter start."
+      );
+    }
+
+    // Update the existing hospital encounter, preserving its other fields.
+    hospitalEncounter.status = "finished";
+
+    hospitalEncounter.period = {
+      ...(hospitalEncounter.period || {}),
+      end: dischargeTime.toISOString()
+    };
+
+    hospitalEncounter.hospitalization = {
+      ...(hospitalEncounter.hospitalization || {}),
+      dischargeDisposition: {
+        coding: [{
+          system: "http://www.nubc.org/patient-discharge",
+          code: "01",
+          display: "Discharged to Home"
+        }],
+        text: "Discharged to home"
+      }
+    };
+
+    write("All four records passed verification.");
+    write("Updating hospital Encounter " + HOSPITAL_ENCOUNTER_ID + "...");
+
+    await client.update(hospitalEncounter);
+
+    // Read back the updated record to verify the saved result.
+    const saved = await client.request(
+      "Encounter/" + HOSPITAL_ENCOUNTER_ID
+    );
+
+    const savedDisposition =
+      saved.hospitalization?.dischargeDisposition?.coding || [];
+
+    const savedHome = savedDisposition.some(item =>
+      item.system === "http://www.nubc.org/patient-discharge" &&
+      item.code === "01"
+    );
+
+    if (
+      saved.status !== "finished" ||
+      !saved.period?.end ||
+      !savedHome
+    ) {
+      throw new Error(
+        "Update was sent, but the saved discharge details could not be verified."
+      );
+    }
+
+    write("");
+    write("SUCCESS: Hospital discharge saved and verified.");
+    write("Patient: Antonio Carmona");
+    write("Hospital Encounter: " + saved.id);
+    write("Status: " + saved.status);
+    write("Discharge disposition: Discharged to Home (01)");
+    write("Discharge time: " + saved.period.end);
+
+    status.textContent = "Hospital discharge verified.";
+
+  } catch (error) {
+    status.textContent = "Discharge update could not be completed.";
+
+    write("");
+    write("Error: " + (error.message || String(error)));
+    write("No additional records were created.");
+
+  } finally {
+    updateStarted = false;
+    dischargeButton.disabled = false;
+  }
+}
+
+dischargeButton.addEventListener("click", dischargePatient);
+
+if (!window.FHIR || !FHIR.oauth2) {
+  status.textContent = "SMART library did not load. Refresh this page.";
+} else {
+  const params = new URLSearchParams(window.location.search);
+  const returningFromAuthorization =
+    params.has("code") || params.has("state");
+
+  if (!returningFromAuthorization) {
+    status.textContent =
+      "Authorize the read and update permissions for Encounter.";
+    authorizeButton.hidden = false;
+  } else {
+    FHIR.oauth2.ready()
+      .then(authorizedClient => {
+        client = authorizedClient;
+
+        status.textContent =
+          "Authorized. Ready to update the synthetic hospital encounter.";
+
+        dischargeButton.hidden = false;
+      })
+      .catch(error => {
+        status.textContent = "SMART authorization could not be completed.";
+        write(error.message || String(error));
+      });
+  }
+}
+</script>
+</body>
+</html>
