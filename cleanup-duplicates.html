@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EMS Duplicate Cleanup</title>
+<script src="https://cdn.jsdelivr.net/npm/fhirclient@3.0.1/bundle/fhir-client.js"></script>
+<style>
+body {
+  font-family: system-ui, sans-serif;
+  max-width: 700px;
+  margin: 35px auto;
+  padding: 20px;
+  color: #243447;
+  background: #f3f6f9;
+}
+main {
+  background: white;
+  padding: 25px;
+  border-radius: 12px;
+  border: 1px solid #d9e2ea;
+}
+h1 { color: #173b57; }
+button {
+  padding: 12px 18px;
+  background: #235d82;
+  color: white;
+  border: 0;
+  border-radius: 7px;
+  cursor: pointer;
+  margin: 10px 0;
+  font-size: 15px;
+}
+button:disabled { opacity: .5; cursor: wait; }
+.danger { background: #9d2424; }
+pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  background: #edf3f7;
+  padding: 15px;
+  border-radius: 7px;
+}
+.warning {
+  background: #fff3e8;
+  padding: 12px;
+  border-radius: 7px;
+}
+</style>
+</head>
+<body>
+<main>
+<h1>EMS Outcome Tracker</h1>
+<h2>Duplicate Record Cleanup</h2>
+
+<p>This page checks the four duplicate synthetic records
+before allowing their removal.</p>
+
+<p class="warning">
+The cleanup removes four resources from the sandbox.
+It preserves the first complete EMS-to-hospital scenario.
+Do not use this page with real patient records.
+</p>
+
+<p id="status">Connecting...</p>
+
+<button id="login" hidden>Authorize cleanup access</button>
+<button id="inspect" hidden>Verify records before cleanup</button>
+
+<div id="confirmation" hidden>
+  <p><strong>Records verified.</strong></p>
+
+  <label>
+    <input type="checkbox" id="confirm">
+    I understand that the four duplicate records listed below
+    will be deleted from the sandbox.
+  </label>
+
+  <br>
+
+  <button id="delete" class="danger" disabled>
+    Delete the four duplicate records
+  </button>
+</div>
+
+<pre id="results">Waiting for authorization...</pre>
+</main>
+
+<script>
+"use strict";
+
+const SERVER =
+"https://launch.smarthealthit.org/v/r4/sim/WzIsIiIsIiIsIk1BTlVBTCIsMCwwLDAsIiIsIiIsIiIsIiIsIiIsIiIsIiIsMCwyLCIiXQ/fhir";
+
+const CLIENT_ID = "my_web_app";
+
+const REDIRECT_URI =
+window.location.origin + window.location.pathname;
+
+const PATIENT =
+"845ac958-8036-45ee-9112-eac31d9b4f30";
+
+const SCOPES = [
+  "openid",
+  "fhirUser",
+  "user/Encounter.rd",
+  "user/Condition.rd"
+].join(" ");
+
+const KEEP = {
+  emsEncounter: "4949143",
+  emsCondition: "4949144",
+  hospitalEncounter: "4949145",
+  hospitalCondition: "4949146"
+};
+
+const REMOVE = {
+  emsEncounter: "4949147",
+  emsCondition: "4949148",
+  hospitalEncounter: "4949149",
+  hospitalCondition: "4949150"
+};
+
+const status = document.getElementById("status");
+const results = document.getElementById("results");
+const loginButton = document.getElementById("login");
+const inspectButton = document.getElementById("inspect");
+const confirmation = document.getElementById("confirmation");
+const confirmCheckbox = document.getElementById("confirm");
+const deleteButton = document.getElementById("delete");
+
+let client = null;
+let verified = false;
+let deletionStarted = false;
+
+function write(message) {
+  results.textContent += message + "\n";
+}
+
+function authorize() {
+  FHIR.oauth2.authorize({
+    clientId: CLIENT_ID,
+    scope: SCOPES,
+    redirectUri: REDIRECT_URI,
+    iss: SERVER,
+    pkceMode: "required"
+  }).catch(error => {
+    status.textContent = "Authorization failed.";
+    write(error.message || String(error));
+  });
+}
+
+loginButton.addEventListener("click", authorize);
+
+function check(condition, message) {
+  if (!condition) {
+    throw new Error(message);
+  }
+}
+
+function hasDemoTag(resource) {
+  return (resource.meta?.tag || []).some(tag =>
+    tag.system ===
+      "https://olivia-h26.github.io/EMS-Outcome-Tracker-Provider/demo" &&
+    tag.code === "synthetic-demo"
+  );
+}
+
+function verifyResource(resource, type, id) {
+  check(
+    resource.resourceType === type,
+    type + "/" + id + " has the wrong resource type."
+  );
+
+  check(
+    resource.id === id,
+    type + "/" + id + " returned an unexpected ID."
+  );
+
+  check(
+    resource.subject?.reference === "Patient/" + PATIENT,
+    type + "/" + id + " belongs to a different patient."
+  );
+
+  check(
+    hasDemoTag(resource),
+    type + "/" + id + " is not tagged as synthetic demo data."
+  );
+}
+
+function hasVerification(resource, code) {
+  return (resource.verificationStatus?.coding || [])
+    .some(item => item.code === code);
+}
+
+function hasReasonReference(resource, reference) {
+  return (resource.reasonReference || [])
+    .some(item => item.reference === reference);
+}
+
+async function read(type, id) {
+  return client.request(type + "/" + id);
+}
+
+async function inspectRecords() {
+  inspectButton.disabled = true;
+  confirmation.hidden = true;
+  verified = false;
+  confirmCheckbox.checked = false;
+  deleteButton.disabled = true;
+  results.textContent = "";
+
+  status.textContent = "Verifying all eight records...";
+
+  try {
+    const ids = [
+      ["Encounter", KEEP.emsEncounter],
+      ["Condition", KEEP.emsCondition],
+      ["Encounter", KEEP.hospitalEncounter],
+      ["Condition", KEEP.hospitalCondition],
+      ["Encounter", REMOVE.emsEncounter],
+      ["Condition", REMOVE.emsCondition],
+      ["Encounter", REMOVE.hospitalEncounter],
+      ["Condition", REMOVE.hospitalCondition]
+    ];
+
+    const resources = await Promise.all(
+      ids.map(([type, id]) => read(type, id))
+    );
+
+    const [ke, kc, kh, kch, re, rc, rh, rch] = resources;
+
+    // Verify the first chain that will be kept.
+    verifyResource(ke, "Encounter", KEEP.emsEncounter);
+    verifyResource(kc, "Condition", KEEP.emsCondition);
+    verifyResource(kh, "Encounter", KEEP.hospitalEncounter);
+    verifyResource(kch, "Condition", KEEP.hospitalCondition);
+
+    check(ke.class?.code === "EMER",
+      "The EMS encounter to keep is not EMER.");
+
+    check(kc.encounter?.reference ===
+      "Encounter/" + KEEP.emsEncounter,
+      "The EMS condition to keep has an unexpected encounter link.");
+
+    check(hasVerification(kc, "provisional"),
+      "The EMS condition to keep is not provisional.");
+
+    check(kh.class?.code === "IMP",
+      "The hospital encounter to keep is not IMP.");
+
+    check(hasReasonReference(kh, "Condition/" + KEEP.emsCondition),
+      "The hospital encounter to keep does not reference the EMS condition.");
+
+    check(kch.encounter?.reference ===
+      "Encounter/" + KEEP.hospitalEncounter,
+      "The hospital condition to keep has an unexpected encounter link.");
+
+    check(hasVerification(kch, "confirmed"),
+      "The hospital condition to keep is not confirmed.");
+
+    // Verify the second chain that will be removed.
+    verifyResource(re, "Encounter", REMOVE.emsEncounter);
+    verifyResource(rc, "Condition", REMOVE.emsCondition);
+    verifyResource(rh, "Encounter", REMOVE.hospitalEncounter);
+    verifyResource(rch, "Condition", REMOVE.hospitalCondition);
+
+    check(re.class?.code === "EMER",
+      "The duplicate EMS encounter is not EMER.");
+
+    check(rc.encounter?.reference ===
+      "Encounter/" + REMOVE.emsEncounter,
+      "The duplicate EMS condition has an unexpected encounter link.");
+
+    check(hasVerification(rc, "provisional"),
+      "The duplicate EMS condition is not provisional.");
+
+    check(rh.class?.code === "IMP",
+      "The duplicate hospital encounter is not IMP.");
+
+    check(hasReasonReference(rh, "Condition/" + REMOVE.emsCondition),
+      "The duplicate hospital encounter does not reference its EMS condition.");
+
+    check(rch.encounter?.reference ===
+      "Encounter/" + REMOVE.hospitalEncounter,
+      "The duplicate hospital condition has an unexpected encounter link.");
+
+    check(hasVerification(rch, "confirmed"),
+      "The duplicate hospital condition is not confirmed.");
+
+    write("VERIFICATION PASSED");
+    write("");
+    write("The first scenario will be preserved:");
+    write("Encounter/" + KEEP.emsEncounter);
+    write("Condition/" + KEEP.emsCondition);
+    write("Encounter/" + KEEP.hospitalEncounter);
+    write("Condition/" + KEEP.hospitalCondition);
+
+    write("");
+    write("The duplicate scenario selected for removal:");
+    write("Encounter/" + REMOVE.emsEncounter);
+    write("Condition/" + REMOVE.emsCondition);
+    write("Encounter/" + REMOVE.hospitalEncounter);
+    write("Condition/" + REMOVE.hospitalCondition);
+
+    write("");
+    write("All eight resources passed the patient, tag, status, and link checks.");
+
+    verified = true;
+    confirmation.hidden = false;
+
+    status.textContent =
+      "Records verified. Review the deletion confirmation below.";
+
+  } catch (error) {
+    status.textContent =
+      "Verification stopped. No records were deleted.";
+
+    write("");
+    write("Reason: " + (error.message || String(error)));
+
+  } finally {
+    inspectButton.disabled = false;
+  }
+}
+
+confirmCheckbox.addEventListener("change", () => {
+  deleteButton.disabled =
+    !confirmCheckbox.checked || !verified || deletionStarted;
+});
+
+async function deleteDuplicates() {
+  if (!verified || !confirmCheckbox.checked || deletionStarted) {
+    return;
+  }
+
+  deletionStarted = true;
+  deleteButton.disabled = true;
+  inspectButton.disabled = true;
+
+  status.textContent = "Removing the duplicate records...";
+  write("");
+  write("Beginning deletion...");
+
+  // Delete dependent records before the encounters they reference.
+  const deletionOrder = [
+    ["Condition", REMOVE.hospitalCondition],
+    ["Encounter", REMOVE.hospitalEncounter],
+    ["Condition", REMOVE.emsCondition],
+    ["Encounter", REMOVE.emsEncounter]
+  ];
+
+  const deleted = [];
+
+  try {
+    for (const [type, id] of deletionOrder) {
+      await client.delete(type + "/" + id);
+      deleted.push(type + "/" + id);
+      write("Deleted " + type + "/" + id);
+    }
+
+    status.textContent =
+      "SUCCESS: Duplicate scenario removed.";
+
+    write("");
+    write("All four duplicate resources were deleted.");
+    write("The first complete EMS-to-hospital scenario was preserved.");
+
+    confirmation.hidden = true;
+    verified = false;
+
+  } catch (error) {
+    status.textContent =
+      "Deletion stopped before completion.";
+
+    write("");
+    write("Completed deletions: " +
+      (deleted.join(", ") || "None"));
+
+    write("Error: " + (error.message || String(error)));
+    write("Send this result for review before trying again.");
+
+  } finally {
+    deletionStarted = false;
+    inspectButton.disabled = false;
+  }
+}
+
+inspectButton.addEventListener("click", inspectRecords);
+deleteButton.addEventListener("click", deleteDuplicates);
+
+if (window.FHIR && FHIR.oauth2) {
+  FHIR.oauth2.ready()
+    .then(authorizedClient => {
+      client = authorizedClient;
+      status.textContent =
+        "Connected. Verify the records before cleanup.";
+      inspectButton.hidden = false;
+    })
+    .catch(() => {
+      status.textContent =
+        "Authorize the additional cleanup permissions.";
+      loginButton.hidden = false;
+    });
+} else {
+  status.textContent =
+    "SMART library did not load. Refresh the page.";
+}
+</script>
+</body>
+</html>
