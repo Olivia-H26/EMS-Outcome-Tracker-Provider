@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EMS Demo Data Setup</title>
+<script src="https://cdn.jsdelivr.net/npm/fhirclient@3.0.1/bundle/fhir-client.js"></script>
+<style>
+body {
+  font-family: system-ui, sans-serif;
+  max-width: 700px;
+  margin: 35px auto;
+  padding: 20px;
+  color: #243447;
+  background: #f3f6f9;
+}
+main {
+  background: white;
+  padding: 25px;
+  border-radius: 12px;
+  border: 1px solid #d9e2ea;
+}
+h1 { color: #173b57; }
+button {
+  padding: 12px 18px;
+  background: #235d82;
+  color: white;
+  border: 0;
+  border-radius: 7px;
+  cursor: pointer;
+  font-size: 16px;
+  margin-top: 12px;
+}
+button:disabled { opacity: .5; }
+#log {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  background: #edf3f7;
+  padding: 14px;
+  border-radius: 7px;
+}
+.warning { color: #9d2424; }
+</style>
+</head>
+
+<body>
+<main>
+<h1>EMS Outcome Tracker</h1>
+<h2>Temporary test-data setup</h2>
+
+<p>
+This page creates fictional demonstration records in the
+SMART sandbox. It does not change the main dashboard.
+</p>
+
+<p class="warning">
+Do not use real patient information.
+</p>
+
+<p id="status">Checking SMART connection...</p>
+
+<button id="login" hidden>Authorize test-data setup</button>
+
+<button id="create" hidden>
+Create EMS-to-hospital test scenario
+</button>
+
+<pre id="log"></pre>
+</main>
+
+<script>
+"use strict";
+
+const FHIR_SERVER =
+"https://launch.smarthealthit.org/v/r4/sim/WzIsIiIsIiIsIk1BTlVBTCIsMCwwLDAsIiIsIiIsIiIsIiIsIiIsIiIsIiIsMCwyLCIiXQ/fhir";
+
+const CLIENT_ID = "my_web_app";
+
+const REDIRECT_URI =
+window.location.origin + window.location.pathname;
+
+const PATIENT_ID =
+"845ac958-8036-45ee-9112-eac31d9b4f30";
+
+const ORGANIZATION_ID =
+"226098a2-6a40-3588-b5bb-db56c3a30a04";
+
+const IDENTIFIER_SYSTEM =
+"https://olivia-h26.github.io/EMS-Outcome-Tracker-Provider/demo";
+
+const ENCOUNTER_PROFILE =
+"http://hl7.org/fhir/us/core/StructureDefinition/us-core-encounter|6.1.0";
+
+const CONDITION_PROFILE =
+"http://hl7.org/fhir/us/core/StructureDefinition/us-core-condition-encounter-diagnosis|6.1.0";
+
+const SCOPES = [
+  "openid",
+  "fhirUser",
+  "user/Patient.rs",
+  "user/Organization.rs",
+  "user/Encounter.crs",
+  "user/Condition.crs"
+].join(" ");
+
+const status = document.getElementById("status");
+const log = document.getElementById("log");
+const loginButton = document.getElementById("login");
+const createButton = document.getElementById("create");
+
+let client = null;
+
+function write(message) {
+  log.textContent += message + "\n";
+}
+
+function authorize() {
+  FHIR.oauth2.authorize({
+    clientId: CLIENT_ID,
+    scope: SCOPES,
+    redirectUri: REDIRECT_URI,
+    iss: FHIR_SERVER,
+    pkceMode: "required"
+  }).catch(error => {
+    status.textContent = "Authorization failed.";
+    write(error.message || String(error));
+  });
+}
+
+loginButton.addEventListener("click", authorize);
+
+function profileMeta(profile) {
+  return {
+    profile: [profile],
+    tag: [{
+      system: IDENTIFIER_SYSTEM,
+      code: "synthetic-demo",
+      display: "Synthetic demonstration data"
+    }]
+  };
+}
+
+async function findOrCreate(resourceType, identifier, resource) {
+  const query =
+    resourceType +
+    "?identifier=" +
+    encodeURIComponent(IDENTIFIER_SYSTEM + "|" + identifier);
+
+  const result = await client.request(query);
+
+  const existing =
+    result.entry &&
+    result.entry.find(item => item.resource);
+
+  if (existing) {
+    write("Existing " + resourceType + " reused: " +
+      existing.resource.id);
+    return existing.resource;
+  }
+
+  const created = await client.create(resource);
+
+  write("Created " + resourceType + ": " + created.id);
+
+  return created;
+}
+
+async function createScenario() {
+  createButton.disabled = true;
+  log.textContent = "";
+  status.textContent = "Creating fictional demonstration records...";
+
+  try {
+    // Confirm the existing sandbox patient and organization.
+    const patient = await client.request(
+      "Patient/" + PATIENT_ID
+    );
+
+    await client.request(
+      "Organization/" + ORGANIZATION_ID
+    );
+
+    write("Using patient: Antonio Carmona");
+    write("Patient ID: " + patient.id);
+
+    const now = new Date();
+
+    const emsStart = new Date(now.getTime() - 60 * 60000);
+    const emsEnd = new Date(now.getTime() - 45 * 60000);
+    const hospitalStart = new Date(now.getTime() - 40 * 60000);
+
+    const emsEncounter = await findOrCreate(
+      "Encounter",
+      "ems-encounter-" + PATIENT_ID,
+      {
+        resourceType: "Encounter",
+        meta: profileMeta(ENCOUNTER_PROFILE),
+        identifier: [{
+          system: IDENTIFIER_SYSTEM,
+          value: "ems-encounter-" + PATIENT_ID
+        }],
+        status: "finished",
+        class: {
+          system: "http://terminology.hl7.org/CodeSystem/v3-ActCode",
+          code: "EMER",
+          display: "emergency"
+        },
+        type: [{
+          text: "EMS prehospital encounter"
+        }],
+        subject: {
+          reference: "Patient/" + PATIENT_ID,
+          display: "Antonio Carmona"
+        },
+        period: {
+          start: emsStart.toISOString(),
+          end: emsEnd.toISOString()
+        },
+        serviceProvider: {
+          reference: "Organization/" + ORGANIZATION_ID
+        }
+      }
+    );
+
+    const emsCondition = await findOrCreate(
+      "Condition",
+      "ems-condition-" + PATIENT_ID,
+      {
+        resourceType: "Condition",
+        meta: profileMeta(CONDITION_PROFILE),
+        identifier: [{
+          system: IDENTIFIER_SYSTEM,
+          value: "ems-condition-" + PATIENT_ID
+        }],
+        clinicalStatus: {
+          coding: [{
+            system: "http://terminology.hl7.org/CodeSystem/condition-clinical",
+            code: "active",
+            display: "Active"
+          }]
+        },
+        verificationStatus: {
+          coding: [{
+            system: "http://terminology.hl7.org/CodeSystem/condition-ver-status",
+            code: "provisional",
+            display: "Provisional"
+          }]
+        },
+        category: [{
+          coding: [{
+            system: "http://terminology.hl7.org/CodeSystem/condition-category",
+            code: "encounter-diagnosis",
+            display: "Encounter Diagnosis"
+          }]
+        }],
+        code: {
+          coding: [{
+            system: "http://snomed.info/sct",
+            code: "267036007",
+            display: "Dyspnea"
+          }],
+          text: "Dyspnea"
+        },
+        subject: {
+          reference: "Patient/" + PATIENT_ID,
+          display: "Antonio Carmona"
+        },
+        encounter: {
+          reference: "Encounter/" + emsEncounter.id
+        },
+        onsetDateTime: emsStart.toISOString(),
+        recordedDate: emsStart.toISOString()
+      }
+    );
+
+    const hospitalEncounter = await findOrCreate(
+      "Encounter",
+      "hospital-encounter-" + PATIENT_ID,
+      {
+        resourceType: "Encounter",
+        meta: profileMeta(ENCOUNTER_PROFILE),
+        identifier: [{
+          system: IDENTIFIER_SYSTEM,
+          value: "hospital-encounter-" + PATIENT_ID
+        }],
+        status: "in-progress",
+        class: {
+          system: "http://terminology.hl7.org/CodeSystem/v3-ActCode",
+          code: "IMP",
+          display: "inpatient encounter"
+        },
+        type: [{
+          text: "Hospital admission following EMS transport"
+        }],
+        subject: {
+          reference: "Patient/" + PATIENT_ID,
+          display: "Antonio Carmona"
+        },
+        period: {
+          start: hospitalStart.toISOString()
+        },
+        serviceProvider: {
+          reference: "Organization/" + ORGANIZATION_ID
+        },
+        reasonReference: [{
+          reference: "Condition/" + emsCondition.id,
+          display: "EMS provisional diagnosis: Dyspnea"
+        }]
+      }
+    );
+
+    const hospitalCondition = await findOrCreate(
+      "Condition",
+      "hospital-condition-" + PATIENT_ID,
+      {
+        resourceType: "Condition",
+        meta: profileMeta(CONDITION_PROFILE),
+        identifier: [{
+          system: IDENTIFIER_SYSTEM,
+          value: "hospital-condition-" + PATIENT_ID
+        }],
+        clinicalStatus: {
+          coding: [{
+            system: "http://terminology.hl7.org/CodeSystem/condition-clinical",
+            code: "active",
+            display: "Active"
+          }]
+        },
+        verificationStatus: {
+          coding: [{
+            system: "http://terminology.hl7.org/CodeSystem/condition-ver-status",
+            code: "confirmed",
+            display: "Confirmed"
+          }]
+        },
+        category: [{
+          coding: [{
+            system: "http://terminology.hl7.org/CodeSystem/condition-category",
+            code: "encounter-diagnosis",
+            display: "Encounter Diagnosis"
+          }]
+        }],
+        code: {
+          coding: [{
+            system: "http://snomed.info/sct",
+            code: "233604007",
+            display: "Pneumonia"
+          }],
+          text: "Pneumonia"
+        },
+        subject: {
+          reference: "Patient/" + PATIENT_ID,
+          display: "Antonio Carmona"
+        },
+        encounter: {
+          reference: "Encounter/" + hospitalEncounter.id
+        },
+        onsetDateTime: hospitalStart.toISOString(),
+        recordedDate: now.toISOString()
+      }
+    );
+
+    write("");
+    write("SUCCESS: Test scenario created or existing demo records reused.");
+    write("EMS Encounter: " + emsEncounter.id);
+    write("EMS provisional Condition: " + emsCondition.id);
+    write("Hospital Encounter: " + hospitalEncounter.id);
+    write("Hospital confirmed Condition: " + hospitalCondition.id);
+
+    status.textContent =
+      "Scenario setup complete. Return to the main dashboard.";
+
+  } catch (error) {
+    status.textContent = "Setup could not be completed.";
+
+    write("");
+    write("Error: " + (error.message || String(error)));
+    write("Copy this error and send it to me.");
+  } finally {
+    createButton.disabled = false;
+  }
+}
+
+createButton.addEventListener("click", createScenario);
+
+if (window.FHIR && FHIR.oauth2) {
+  FHIR.oauth2.ready()
+    .then(authorizedClient => {
+      client = authorizedClient;
+      status.textContent =
+        "Authorized. Ready to create the synthetic test scenario.";
+      createButton.hidden = false;
+    })
+    .catch(() => {
+      status.textContent =
+        "Sign in with temporary test-data permissions.";
+      loginButton.hidden = false;
+    });
+} else {
+  status.textContent =
+    "SMART library did not load. Refresh the page.";
+}
+</script>
+
+</body>
+</html>
