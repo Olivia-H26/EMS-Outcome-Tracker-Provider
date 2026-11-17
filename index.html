@@ -10,366 +10,330 @@
 
 <style>
 :root {
-  --navy: #173b57;
-  --blue: #235d82;
-  --ink: #243447;
-  --muted: #617386;
-  --line: #d9e2ea;
-  --page: #f3f6f9;
-  --white: #fff;
-  --ems-bg: #eaf3fa;
-  --hospital-bg: #eaf5ee;
-  --green: #237447;
-  --amber: #916114;
-  --red: #a32b2b;
+  --navy:#173b57;
+  --blue:#235d82;
+  --ink:#243447;
+  --muted:#617386;
+  --line:#d9e2ea;
+  --page:#f3f6f9;
+  --white:#fff;
+  --ems-bg:#eaf3fa;
+  --hospital-bg:#eaf5ee;
+  --green:#237447;
+  --amber:#916114;
 }
 
-* {
-  box-sizing: border-box;
-}
+* { box-sizing:border-box; }
 
 body {
-  margin: 0;
-  color: var(--ink);
-  background: var(--page);
-  font: 16px/1.5 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  margin:0;
+  color:var(--ink);
+  background:var(--page);
+  font:16px/1.5 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
 }
 
 header {
-  background: var(--navy);
-  color: white;
-  padding: 1.4rem max(1rem, calc((100% - 1150px) / 2));
+  background:var(--navy);
+  color:white;
+  padding:1.4rem max(1rem,calc((100% - 1150px)/2));
 }
 
 header h1 {
-  margin: 0;
-  font-size: 1.7rem;
+  margin:0;
+  font-size:1.7rem;
 }
 
 header p {
-  margin: .25rem 0 0;
-  color: #dce8f0;
+  margin:.25rem 0 0;
+  color:#dce8f0;
 }
 
 main {
-  max-width: 1150px;
-  margin: 1.5rem auto;
-  padding: 0 1rem 3rem;
+  max-width:1150px;
+  margin:1.5rem auto;
+  padding:0 1rem 3rem;
 }
 
 .panel {
-  background: var(--white);
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  padding: 1.25rem;
-  margin-bottom: 1rem;
-  box-shadow: 0 2px 8px rgba(20,45,65,.035);
+  background:var(--white);
+  border:1px solid var(--line);
+  border-radius:12px;
+  padding:1.25rem;
+  margin-bottom:1rem;
+  box-shadow:0 2px 8px rgba(20,45,65,.035);
 }
 
 h2 {
-  color: var(--navy);
-  font-size: 1.25rem;
-  margin: 0 0 .8rem;
+  color:var(--navy);
+  font-size:1.25rem;
+  margin:0 0 .8rem;
 }
 
 h3 {
-  color: var(--navy);
-  font-size: 1.05rem;
-  margin: .2rem 0 .7rem;
+  color:var(--navy);
+  font-size:1.05rem;
+  margin:.2rem 0 .7rem;
 }
 
-.muted {
-  color: var(--muted);
-}
+.muted { color:var(--muted); }
 
 .status {
-  padding: .8rem 1rem;
-  border-radius: 8px;
-  background: #edf3f7;
-  color: var(--navy);
-  margin: .8rem 0 1rem;
-  overflow-wrap: anywhere;
+  padding:.8rem 1rem;
+  border-radius:8px;
+  background:#edf3f7;
+  color:var(--navy);
+  margin:.8rem 0 1rem;
+  overflow-wrap:anywhere;
 }
 
 .status.error {
-  background: #fff0f0;
-  color: var(--red);
+  background:#fff0f0;
+  color:#a32b2b;
 }
 
 .search-row {
-  display: flex;
-  gap: .65rem;
-  flex-wrap: wrap;
+  display:flex;
+  gap:.65rem;
+  flex-wrap:wrap;
 }
 
 input[type="search"] {
-  flex: 1 1 260px;
-  min-width: 0;
-  padding: .8rem .9rem;
-  border: 1px solid #9cabb8;
-  border-radius: 8px;
-  font: inherit;
+  flex:1 1 260px;
+  min-width:0;
+  padding:.8rem .9rem;
+  border:1px solid #9cabb8;
+  border-radius:8px;
+  font:inherit;
 }
 
-button, .button-link {
-  border: 0;
-  border-radius: 8px;
-  background: var(--blue);
-  color: white;
-  padding: .78rem 1rem;
-  font: 600 1rem system-ui, sans-serif;
-  cursor: pointer;
-  text-decoration: none;
-  display: inline-block;
+button,.button-link {
+  border:0;
+  border-radius:8px;
+  background:var(--blue);
+  color:white;
+  padding:.78rem 1rem;
+  font:600 1rem system-ui,sans-serif;
+  cursor:pointer;
+  text-decoration:none;
+  display:inline-block;
 }
 
-button:hover, .button-link:hover {
-  background: var(--navy);
+button:hover,.button-link:hover {
+  background:var(--navy);
 }
 
 button:disabled {
-  opacity: .6;
-  cursor: wait;
+  opacity:.6;
+  cursor:wait;
 }
 
 .result-list {
-  display: grid;
-  gap: .7rem;
-  margin-top: .8rem;
+  display:grid;
+  gap:.7rem;
+  margin-top:.8rem;
 }
 
 .patient-result {
-  width: 100%;
-  text-align: left;
-  background: #f7fafc;
-  color: var(--ink);
-  border: 1px solid var(--line);
+  width:100%;
+  text-align:left;
+  background:#f7fafc;
+  color:var(--ink);
+  border:1px solid var(--line);
 }
 
-.patient-result:hover {
-  background: #edf3f7;
-}
+.patient-result:hover { background:#edf3f7; }
 
-.patient-result strong {
-  color: var(--navy);
-}
+.patient-result strong { color:var(--navy); }
 
 .patient-result span {
-  display: block;
-  font-weight: 400;
-  margin-top: .2rem;
+  display:block;
+  font-weight:400;
+  margin-top:.2rem;
 }
 
 .grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-  gap: .8rem 1.2rem;
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(210px,1fr));
+  gap:.8rem 1.2rem;
 }
 
 .field {
-  min-width: 0;
-  overflow-wrap: anywhere;
+  min-width:0;
+  overflow-wrap:anywhere;
 }
 
 .field strong {
-  display: block;
-  color: #506477;
-  font-size: .84rem;
+  display:block;
+  color:#506477;
+  font-size:.84rem;
 }
 
-.field span {
-  display: block;
-}
-
-.comparison-heading {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: .5rem;
-  margin-bottom: 1rem;
-}
+.field span { display:block; }
 
 .pair-card {
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  overflow: hidden;
-  margin: 1rem 0;
-  background: white;
+  border:1px solid var(--line);
+  border-radius:12px;
+  overflow:hidden;
+  margin:1rem 0;
+  background:white;
 }
 
 .pair-title {
-  padding: .8rem 1rem;
-  background: #f7f9fb;
-  border-bottom: 1px solid var(--line);
-  color: var(--navy);
-  font-weight: 750;
+  padding:.8rem 1rem;
+  background:#f7f9fb;
+  border-bottom:1px solid var(--line);
+  color:var(--navy);
+  font-weight:750;
 }
 
 .compare-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display:grid;
+  grid-template-columns:1fr 1fr;
 }
 
 .compare-column {
-  padding: 1.1rem;
-  min-width: 0;
+  padding:1.2rem;
+  min-width:0;
 }
 
 .ems-column {
-  background: var(--ems-bg);
-  border-right: 1px solid var(--line);
+  background:var(--ems-bg);
+  border-right:1px solid var(--line);
 }
 
-.hospital-column {
-  background: var(--hospital-bg);
-}
+.hospital-column { background:var(--hospital-bg); }
 
 .column-label {
-  font-weight: 750;
-  letter-spacing: .04em;
-  font-size: .85rem;
-  margin-bottom: .8rem;
+  font-weight:750;
+  letter-spacing:.04em;
+  font-size:.88rem;
+  margin-bottom:.8rem;
 }
 
-.ems-column .column-label {
-  color: #245d83;
-}
-
-.hospital-column .column-label {
-  color: #27633d;
-}
+.ems-column .column-label { color:#245d83; }
+.hospital-column .column-label { color:#27633d; }
 
 .diagnosis-label {
-  color: #53677a;
-  font-size: .78rem;
-  font-weight: 700;
-  letter-spacing: .04em;
+  color:#53677a;
+  font-size:.78rem;
+  font-weight:700;
 }
 
 .diagnosis {
-  font-size: 1.4rem;
-  font-weight: 750;
-  margin: .4rem 0;
-  overflow-wrap: anywhere;
+  font-size:1.45rem;
+  font-weight:750;
+  margin:.4rem 0;
+  overflow-wrap:anywhere;
 }
 
 .verification {
-  display: inline-block;
-  border-radius: 20px;
-  padding: .2rem .65rem;
-  font-size: .8rem;
-  font-weight: 700;
-  margin: .2rem 0 .8rem;
-  background: white;
-  border: 1px solid var(--line);
+  display:inline-block;
+  border-radius:20px;
+  padding:.2rem .65rem;
+  font-size:.8rem;
+  font-weight:700;
+  margin:.2rem 0 .8rem;
+  background:white;
+  border:1px solid var(--line);
 }
 
-.provisional {
-  color: var(--amber);
-}
-
-.confirmed {
-  color: var(--green);
-}
+.provisional { color:var(--amber); }
+.confirmed { color:var(--green); }
 
 .detail {
-  padding: .55rem 0;
-  border-top: 1px solid rgba(90,110,130,.17);
-  overflow-wrap: anywhere;
+  padding:.6rem 0;
+  border-top:1px solid rgba(90,110,130,.17);
+  overflow-wrap:anywhere;
 }
 
 .detail strong {
-  display: block;
-  color: #53677a;
-  font-size: .8rem;
+  display:block;
+  color:#53677a;
+  font-size:.8rem;
 }
 
 .link-note {
-  padding: .8rem 1rem;
-  text-align: center;
-  background: #f5f8fa;
-  border-top: 1px solid var(--line);
-  color: #31566f;
-  font-size: .9rem;
-  overflow-wrap: anywhere;
+  padding:.85rem 1rem;
+  text-align:center;
+  background:#f5f8fa;
+  border-top:1px solid var(--line);
+  color:var(--green);
+  font-size:.9rem;
+  font-weight:650;
+  overflow-wrap:anywhere;
 }
 
-.link-note.connected {
-  color: var(--green);
-  font-weight: 650;
+.outcome {
+  display:block;
+  margin-top:.6rem;
+  padding:.55rem .7rem;
+  border-radius:7px;
+  background:white;
+  color:var(--green);
+  font-weight:750;
+  border:1px solid #b8d5c3;
 }
 
 .empty-state {
-  padding: 1.5rem;
-  background: #f7f9fb;
-  border: 1px dashed #bac8d4;
-  border-radius: 9px;
-  color: var(--muted);
+  padding:1.5rem;
+  background:#f7f9fb;
+  border:1px dashed #bac8d4;
+  border-radius:9px;
+  color:var(--muted);
 }
 
 .history-card {
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: .9rem;
-  margin: .7rem 0;
-  background: white;
+  border:1px solid var(--line);
+  border-radius:8px;
+  padding:.9rem;
+  margin:.7rem 0;
+  background:white;
 }
 
 .history-card p {
-  margin: .25rem 0;
-  overflow-wrap: anywhere;
+  margin:.25rem 0;
+  overflow-wrap:anywhere;
 }
 
 .record-label {
-  font-weight: 650;
-  color: #506477;
+  font-weight:650;
+  color:#506477;
 }
 
 details {
-  margin-top: .5rem;
-  border-top: 1px solid var(--line);
-  padding-top: 1rem;
+  margin-top:.5rem;
+  border-top:1px solid var(--line);
+  padding-top:1rem;
 }
 
 summary {
-  color: var(--navy);
-  font-weight: 650;
-  cursor: pointer;
+  color:var(--navy);
+  font-weight:650;
+  cursor:pointer;
 }
 
 footer {
-  text-align: center;
-  color: var(--muted);
-  font-size: .85rem;
-  padding: 1rem;
+  text-align:center;
+  color:var(--muted);
+  font-size:.85rem;
+  padding:1rem;
 }
 
-[hidden] {
-  display: none !important;
-}
+[hidden] { display:none !important; }
 
-@media (max-width: 650px) {
-  header h1 {
-    font-size: 1.4rem;
-  }
+@media(max-width:650px) {
+  header h1 { font-size:1.4rem; }
 
-  .compare-grid {
-    grid-template-columns: 1fr;
-  }
+  .compare-grid { grid-template-columns:1fr; }
 
   .ems-column {
-    border-right: 0;
-    border-bottom: 2px solid var(--line);
+    border-right:0;
+    border-bottom:2px solid var(--line);
   }
 
-  .diagnosis {
-    font-size: 1.2rem;
-  }
+  .diagnosis { font-size:1.2rem; }
 
-  .panel {
-    padding: 1rem;
-  }
+  .panel { padding:1rem; }
 }
 </style>
 </head>
@@ -383,25 +347,22 @@ footer {
 
 <main>
 
-  <!-- SIGN IN -->
   <section id="login-panel" class="panel" hidden>
     <h2>EMS Personnel Sign-In</h2>
     <p id="login-message" class="muted">
-      Sign in through the SMART sandbox to access the dashboard.
+      Sign in through the SMART authorization system.
     </p>
     <a class="button-link" href="./launch.html">
       Sign in
     </a>
   </section>
 
-  <!-- DASHBOARD -->
   <section id="dashboard" hidden>
 
     <div id="connection-status" class="status" role="status">
       Connecting...
     </div>
 
-    <!-- PATIENT SEARCH -->
     <section class="panel">
       <h2>Find a Patient</h2>
 
@@ -434,32 +395,22 @@ footer {
       <div id="patient-results" class="result-list"></div>
     </section>
 
-    <!-- PATIENT INFORMATION -->
     <section id="selected-patient-panel" class="panel" hidden>
       <h2>Selected Patient</h2>
       <div id="patient-summary" class="grid"></div>
     </section>
 
-    <!-- SIDE-BY-SIDE COMPARISON -->
     <section id="comparison-panel" class="panel" hidden>
-
-      <div class="comparison-heading">
-        <div>
-          <h2>EMS-to-Hospital Comparison</h2>
-          <p class="muted">
-            Compare the prehospital assessment with the hospital outcome.
-          </p>
-        </div>
-      </div>
-
+      <h2>EMS-to-Hospital Comparison</h2>
+      <p class="muted">
+        Compare the EMS assessment with the hospital diagnosis and outcome.
+      </p>
       <div id="comparison-list"></div>
-
     </section>
 
-    <!-- OTHER RECORDS -->
     <section id="history-panel" class="panel" hidden>
       <details>
-        <summary>View other patient encounters and conditions</summary>
+        <summary>View Other Patient Encounters and Conditions</summary>
         <div id="history-list"></div>
       </details>
     </section>
@@ -469,7 +420,7 @@ footer {
 </main>
 
 <footer>
-  Read-only demonstration · Synthetic test data
+  EMS Outcome Tracker · Read-only demonstration · Synthetic test data
 </footer>
 
 <script>
@@ -479,7 +430,9 @@ footer {
 
   const loginPanel = document.getElementById("login-panel");
   const dashboard = document.getElementById("dashboard");
-  const loginMessage = document.getElementById("login-message");
+
+  const loginMessage =
+    document.getElementById("login-message");
 
   const connectionStatus =
     document.getElementById("connection-status");
@@ -679,6 +632,7 @@ footer {
 
     const heading = document.createElement("h3");
     heading.textContent = title;
+
     article.appendChild(heading);
 
     fields.forEach(([label, value]) => {
@@ -845,13 +799,14 @@ footer {
     if (condition) {
       const badge = document.createElement("span");
 
-      const status = verificationStatus(condition).toLowerCase();
+      const currentStatus =
+        verificationStatus(condition).toLowerCase();
 
       badge.className =
         "verification " +
-        (status.includes("provisional")
+        (currentStatus.includes("provisional")
           ? "provisional"
-          : status.includes("confirmed")
+          : currentStatus.includes("confirmed")
             ? "confirmed"
             : "");
 
@@ -862,8 +817,8 @@ footer {
     }
 
     addDetail(column, "Encounter ID", encounter.id);
-    addDetail(column, "Encounter status", encounter.status);
-    addDetail(column, "Encounter class", formatEncounterClass(encounter));
+    addDetail(column, "Encounter Status", encounter.status);
+    addDetail(column, "Encounter Class", formatEncounterClass(encounter));
 
     addDetail(
       column,
@@ -879,7 +834,7 @@ footer {
 
     addDetail(
       column,
-      "Service provider",
+      "Service Provider",
       referenceText(encounter.serviceProvider)
     );
 
@@ -888,7 +843,7 @@ footer {
 
       addDetail(
         column,
-        "Recorded date",
+        "Recorded Date",
         formatDate(condition.recordedDate)
       );
     }
@@ -896,15 +851,29 @@ footer {
     if (kind === "HOSPITAL") {
       addDetail(
         column,
-        "Discharge disposition",
+        "Discharge Disposition",
         formatDisposition(encounter)
       );
 
       addDetail(
         column,
-        "Discharge date and time",
+        "Discharge Date and Time",
         formatDate(encounter.period && encounter.period.end)
       );
+
+      if (
+        encounter.status === "finished" &&
+        encounter.period &&
+        encounter.period.end &&
+        formatDisposition(encounter) !== "Not recorded"
+      ) {
+        const outcome = document.createElement("div");
+        outcome.className = "outcome";
+        outcome.textContent =
+          "Hospital Outcome: " + formatDisposition(encounter);
+
+        column.appendChild(outcome);
+      }
     }
 
     return column;
@@ -927,10 +896,11 @@ footer {
     if (!result.pairs.length) {
       const empty = document.createElement("div");
       empty.className = "empty-state";
+
       empty.textContent =
         "No linked EMS-to-hospital encounters were found. " +
-        "A hospital Encounter must reference the EMS provisional Condition " +
-        "in reasonReference for the comparison to appear.";
+        "The hospital Encounter must reference the EMS provisional " +
+        "Condition in reasonReference.";
 
       list.appendChild(empty);
     } else {
@@ -968,7 +938,7 @@ footer {
         card.appendChild(grid);
 
         const note = document.createElement("div");
-        note.className = "link-note connected";
+        note.className = "link-note";
 
         note.textContent =
           "Linked: Hospital encounter reason references EMS Condition/" +
@@ -1013,7 +983,7 @@ footer {
                   "End",
                   formatDate(item.period && item.period.end)
                 ],
-                ["Reason code", conceptText(item.reasonCode)]
+                ["Reason Code", conceptText(item.reasonCode)]
               ]
             )
           );
@@ -1031,10 +1001,10 @@ footer {
               conceptText(item.code),
               [
                 ["Condition ID", item.id],
-                ["Clinical status", conceptText(item.clinicalStatus)],
+                ["Clinical Status", conceptText(item.clinicalStatus)],
                 ["Verification", verificationStatus(item)],
                 [
-                  "Encounter reference",
+                  "Encounter Reference",
                   referenceText(item.encounter)
                 ]
               ]
@@ -1096,11 +1066,7 @@ footer {
     patientResults.replaceChildren();
 
     if (!patients.length) {
-      showStatus(
-        searchMessage,
-        "No matching patients were found.",
-        false
-      );
+      showStatus(searchMessage, "No matching patients were found.", false);
       return;
     }
 
@@ -1151,9 +1117,7 @@ footer {
 
     try {
       const result = await fhirClient.request(
-        "Patient?name=" +
-        encodeURIComponent(text) +
-        "&_count=25"
+        "Patient?name=" + encodeURIComponent(text) + "&_count=25"
       );
 
       displayPatients(getBundleEntries(result));
@@ -1181,9 +1145,7 @@ footer {
     browseButton.disabled = true;
 
     try {
-      const result = await fhirClient.request(
-        "Patient?_count=25"
-      );
+      const result = await fhirClient.request("Patient?_count=25");
 
       displayPatients(getBundleEntries(result));
 
@@ -1206,14 +1168,12 @@ footer {
 
     const text = searchInput.value.trim();
 
-    if (text) {
-      searchPatients(text);
-    }
+    if (text) searchPatients(text);
   });
 
   browseButton.addEventListener("click", browsePatients);
 
-  // Preserve the existing SMART standalone login.
+  // Existing SMART standalone authorization is preserved.
   if (!window.FHIR || !FHIR.oauth2) {
     showLogin(
       "The SMART client library did not load. Check your internet connection and reload."
@@ -1224,7 +1184,6 @@ footer {
   FHIR.oauth2.ready()
     .then(client => {
       fhirClient = client;
-
       loginPanel.hidden = true;
       dashboard.hidden = false;
 
@@ -1234,9 +1193,9 @@ footer {
         false
       );
     })
-    .catch(error => {
+    .catch(() => {
       showLogin(
-        "You are not signed in. Use the EMS personnel sign-in button to connect to the SMART sandbox."
+        "You are not signed in. Use the sign-in link to connect to the SMART sandbox."
       );
     });
 
