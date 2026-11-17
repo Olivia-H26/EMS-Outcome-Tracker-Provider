@@ -3,52 +3,164 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+
   <title>Provider Sign In | EMS Outcome Tracker</title>
 
   <script src="https://cdn.jsdelivr.net/npm/fhirclient@3.0.1/bundle/fhir-client.js"></script>
+
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      max-width: 650px;
+      margin: 4rem auto;
+      padding: 0 1.5rem;
+      line-height: 1.5;
+      color: #263445;
+      background: #f5f7fa;
+    }
+
+    main {
+      background: white;
+      padding: 2rem;
+      border-radius: 12px;
+      border: 1px solid #dce3ea;
+    }
+
+    h1 {
+      color: #173b57;
+    }
+
+    #status {
+      margin-top: 1.5rem;
+    }
+
+    #error {
+      color: #a21c1c;
+      overflow-wrap: anywhere;
+    }
+  </style>
 </head>
 
 <body>
+
   <main>
     <h1>EMS Outcome Tracker</h1>
-    <h2>Provider Sign In</h2>
+
+    <h2>Standalone Provider Sign In</h2>
 
     <p id="status">
-      Connecting to the SMART Health IT R4 server...
+      Preparing secure provider authentication...
     </p>
 
-    <p id="error" style="color: darkred;"></p>
+    <p id="error" role="alert"></p>
   </main>
 
   <script>
-    // SMART Health IT Provider Standalone configuration.
-    // This is the exact FHIR server configured in your launcher.
+    "use strict";
+
+    // =====================================================
+    // EMS OUTCOME TRACKER
+    // SMART APP LAUNCH 2.2.0
+    // FHIR R4
+    // PROVIDER STANDALONE LAUNCH
+    // =====================================================
+
+
+    // 1. SMART HEALTH IT R4 SERVER
+    // Exact server URL from your configured SMART Launcher.
 
     var sandboxIss =
       "https://launch.smarthealthit.org/v/r4/sim/WzIsIiIsIiIsIk1BTlVBTCIsMCwwLDAsIiIsIiIsIiIsIiIsIiIsIiIsIiIsMCwyLCIiXQ/fhir";
 
-    // Provider standalone authorization.
-    // No launch/patient scope is requested.
 
-    FHIR.oauth2.authorize({
-      clientId: "my_web_app",
+    // 2. PUBLIC APPLICATION CLIENT
+    // No client secret is stored in this browser application.
 
-      scope: [
-        "openid",
-        "fhirUser",
-        "user/Patient.read"
-      ].join(" "),
+    var clientId = "my_web_app";
 
-      redirectUri: "index.html",
 
-      iss: sandboxIss
-    }).catch(function(error) {
-      document.getElementById("status").textContent =
-        "Provider sign-in could not be started.";
+    // 3. SMART 2.2.0 AUTHORIZATION SCOPES
+    //
+    // openid:
+    // Authenticate the provider using OpenID Connect.
+    //
+    // fhirUser:
+    // Request the authenticated user's FHIR identity.
+    //
+    // user/Patient.rs:
+    // Request read and search access to authorized Patient resources.
 
-      document.getElementById("error").textContent =
-        error.message || String(error);
-    });
+    var requestedScopes = [
+      "openid",
+      "fhirUser",
+      "user/Patient.rs"
+    ].join(" ");
+
+
+    // 4. START PROVIDER STANDALONE AUTHORIZATION
+
+    function startProviderAuthorization() {
+
+      var status = document.getElementById("status");
+      var errorNode = document.getElementById("error");
+
+      status.textContent =
+        "Connecting to SMART Health IT R4...";
+
+      errorNode.textContent = "";
+
+      if (!window.FHIR || !FHIR.oauth2) {
+        status.textContent =
+          "SMART authentication library unavailable.";
+
+        errorNode.textContent =
+          "Please check your internet connection and reload this page.";
+
+        return;
+      }
+
+      FHIR.oauth2.authorize({
+
+        clientId: clientId,
+
+        scope: requestedScopes,
+
+        redirectUri: new URL(
+          "index.html",
+          window.location.href
+        ).href,
+
+        iss: sandboxIss,
+
+        // Require PKCE.
+        // The SMART client uses S256 when supported by the server.
+
+        pkceMode: "required"
+
+      }).catch(function(error) {
+
+        status.textContent =
+          "Provider authorization could not be started.";
+
+        errorNode.textContent =
+          error && error.message
+            ? error.message
+            : String(error);
+
+        console.error(
+          "SMART authorization error:",
+          error
+        );
+
+      });
+    }
+
+
+    // 5. BEGIN AUTHORIZATION
+
+    startProviderAuthorization();
+
   </script>
+
 </body>
 </html>
