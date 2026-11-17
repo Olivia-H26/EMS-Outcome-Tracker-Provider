@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>EMS Demo Data Setup</title>
+<title>EMS Duplicate Checker</title>
 <script src="https://cdn.jsdelivr.net/npm/fhirclient@3.0.1/bundle/fhir-client.js"></script>
 <style>
 body {
   font-family: system-ui, sans-serif;
-  max-width: 700px;
+  max-width: 750px;
   margin: 35px auto;
   padding: 20px;
   color: #243447;
@@ -28,50 +28,37 @@ button {
   border: 0;
   border-radius: 7px;
   cursor: pointer;
-  font-size: 16px;
-  margin-top: 12px;
+  margin: 8px 0;
 }
-button:disabled { opacity: .5; }
-#log {
+pre {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   background: #edf3f7;
-  padding: 14px;
+  padding: 15px;
   border-radius: 7px;
 }
-.warning { color: #9d2424; }
 </style>
 </head>
-
 <body>
 <main>
 <h1>EMS Outcome Tracker</h1>
-<h2>Temporary test-data setup</h2>
+<h2>Duplicate Record Checker</h2>
 
-<p>
-This page creates fictional demonstration records in the
-SMART sandbox. It does not change the main dashboard.
-</p>
+<p>This page checks the existing synthetic test records.</p>
+<p><strong>It does not create, update, or delete anything.</strong></p>
 
-<p class="warning">
-Do not use real patient information.
-</p>
+<p id="status">Connecting to the SMART sandbox...</p>
 
-<p id="status">Checking SMART connection...</p>
+<button id="login" hidden>Authorize read-only access</button>
+<button id="inspect" hidden>Check duplicate records</button>
 
-<button id="login" hidden>Authorize test-data setup</button>
-
-<button id="create" hidden>
-Create EMS-to-hospital test scenario
-</button>
-
-<pre id="log"></pre>
+<pre id="results">Waiting for connection...</pre>
 </main>
 
 <script>
 "use strict";
 
-const FHIR_SERVER =
+const SERVER =
 "https://launch.smarthealthit.org/v/r4/sim/WzIsIiIsIiIsIk1BTlVBTCIsMCwwLDAsIiIsIiIsIiIsIiIsIiIsIiIsIiIsMCwyLCIiXQ/fhir";
 
 const CLIENT_ID = "my_web_app";
@@ -79,328 +66,186 @@ const CLIENT_ID = "my_web_app";
 const REDIRECT_URI =
 window.location.origin + window.location.pathname;
 
-const PATIENT_ID =
-"845ac958-8036-45ee-9112-eac31d9b4f30";
-
-const ORGANIZATION_ID =
-"226098a2-6a40-3588-b5bb-db56c3a30a04";
-
-const IDENTIFIER_SYSTEM =
-"https://olivia-h26.github.io/EMS-Outcome-Tracker-Provider/demo";
-
-const ENCOUNTER_PROFILE =
-"http://hl7.org/fhir/us/core/StructureDefinition/us-core-encounter|6.1.0";
-
-const CONDITION_PROFILE =
-"http://hl7.org/fhir/us/core/StructureDefinition/us-core-condition-encounter-diagnosis|6.1.0";
-
 const SCOPES = [
   "openid",
   "fhirUser",
-  "user/Patient.rs",
-  "user/Organization.rs",
-  "user/Encounter.crs",
-  "user/Condition.crs"
+  "user/Encounter.rs",
+  "user/Condition.rs"
 ].join(" ");
 
-const status = document.getElementById("status");
-const log = document.getElementById("log");
-const loginButton = document.getElementById("login");
-const createButton = document.getElementById("create");
+const ENCOUNTER_IDS = [
+  "4949143",
+  "4949145",
+  "4949147",
+  "4949149"
+];
+
+const CONDITION_IDS = [
+  "4949144",
+  "4949146",
+  "4949148",
+  "4949150"
+];
 
 let client = null;
 
-function write(message) {
-  log.textContent += message + "\n";
-}
+const status = document.getElementById("status");
+const results = document.getElementById("results");
+const loginButton = document.getElementById("login");
+const inspectButton = document.getElementById("inspect");
 
 function authorize() {
   FHIR.oauth2.authorize({
     clientId: CLIENT_ID,
     scope: SCOPES,
     redirectUri: REDIRECT_URI,
-    iss: FHIR_SERVER,
+    iss: SERVER,
     pkceMode: "required"
   }).catch(error => {
     status.textContent = "Authorization failed.";
-    write(error.message || String(error));
+    results.textContent = error.message || String(error);
   });
 }
 
 loginButton.addEventListener("click", authorize);
 
-function profileMeta(profile) {
+function getText(concept) {
+  if (!concept) return "Not recorded";
+
+  if (concept.text) return concept.text;
+
+  if (Array.isArray(concept.coding)) {
+    return concept.coding
+      .map(item => item.display || item.code)
+      .filter(Boolean)
+      .join(", ");
+  }
+
+  return "Not recorded";
+}
+
+function getReference(reference) {
+  if (!reference) return [];
+
+  const items = Array.isArray(reference)
+    ? reference
+    : [reference];
+
+  return items.map(item => ({
+    reference: item.reference || "",
+    display: item.display || ""
+  }));
+}
+
+function hasDemoTag(resource) {
+  return (resource.meta?.tag || []).some(tag =>
+    tag.system ===
+      "https://olivia-h26.github.io/EMS-Outcome-Tracker-Provider/demo" &&
+    tag.code === "synthetic-demo"
+  );
+}
+
+function summarizeEncounter(resource) {
   return {
-    profile: [profile],
-    tag: [{
-      system: IDENTIFIER_SYSTEM,
-      code: "synthetic-demo",
-      display: "Synthetic demonstration data"
-    }]
+    id: resource.id,
+    type: getText(resource.type),
+    status: resource.status,
+    class: resource.class?.code || "",
+    start: resource.period?.start || "",
+    patient: resource.subject?.reference || "",
+    reasonReference: getReference(resource.reasonReference),
+    syntheticDemoTag: hasDemoTag(resource)
   };
 }
 
-async function findOrCreate(resourceType, identifier, resource) {
-  const query =
-    resourceType +
-    "?identifier=" +
-    encodeURIComponent(IDENTIFIER_SYSTEM + "|" + identifier);
+function summarizeCondition(resource) {
+  const verification = resource.verificationStatus?.coding || [];
 
-  const result = await client.request(query);
-
-  const existing =
-    result.entry &&
-    result.entry.find(item => item.resource);
-
-  if (existing) {
-    write("Existing " + resourceType + " reused: " +
-      existing.resource.id);
-    return existing.resource;
-  }
-
-  const created = await client.create(resource);
-
-  write("Created " + resourceType + ": " + created.id);
-
-  return created;
+  return {
+    id: resource.id,
+    code: getText(resource.code),
+    verificationStatus: verification.map(item => item.code),
+    encounter: resource.encounter?.reference || "",
+    patient: resource.subject?.reference || "",
+    syntheticDemoTag: hasDemoTag(resource)
+  };
 }
 
-async function createScenario() {
-  createButton.disabled = true;
-  log.textContent = "";
-  status.textContent = "Creating fictional demonstration records...";
+async function readResource(type, id) {
+  return client.request(type + "/" + id);
+}
+
+async function inspectRecords() {
+  inspectButton.disabled = true;
+  status.textContent = "Checking the eight records...";
+  results.textContent = "";
 
   try {
-    // Confirm the existing sandbox patient and organization.
-    const patient = await client.request(
-      "Patient/" + PATIENT_ID
+    const encounterResults = await Promise.all(
+      ENCOUNTER_IDS.map(id =>
+        readResource("Encounter", id)
+      )
     );
 
-    await client.request(
-      "Organization/" + ORGANIZATION_ID
+    const conditionResults = await Promise.all(
+      CONDITION_IDS.map(id =>
+        readResource("Condition", id)
+      )
     );
 
-    write("Using patient: Antonio Carmona");
-    write("Patient ID: " + patient.id);
-
-    const now = new Date();
-
-    const emsStart = new Date(now.getTime() - 60 * 60000);
-    const emsEnd = new Date(now.getTime() - 45 * 60000);
-    const hospitalStart = new Date(now.getTime() - 40 * 60000);
-
-    const emsEncounter = await findOrCreate(
-      "Encounter",
-      "ems-encounter-" + PATIENT_ID,
-      {
-        resourceType: "Encounter",
-        meta: profileMeta(ENCOUNTER_PROFILE),
-        identifier: [{
-          system: IDENTIFIER_SYSTEM,
-          value: "ems-encounter-" + PATIENT_ID
-        }],
-        status: "finished",
-        class: {
-          system: "http://terminology.hl7.org/CodeSystem/v3-ActCode",
-          code: "EMER",
-          display: "emergency"
-        },
-        type: [{
-          text: "EMS prehospital encounter"
-        }],
-        subject: {
-          reference: "Patient/" + PATIENT_ID,
-          display: "Antonio Carmona"
-        },
-        period: {
-          start: emsStart.toISOString(),
-          end: emsEnd.toISOString()
-        },
-        serviceProvider: {
-          reference: "Organization/" + ORGANIZATION_ID
-        }
-      }
+    const encounters = encounterResults.map(
+      summarizeEncounter
     );
 
-    const emsCondition = await findOrCreate(
-      "Condition",
-      "ems-condition-" + PATIENT_ID,
-      {
-        resourceType: "Condition",
-        meta: profileMeta(CONDITION_PROFILE),
-        identifier: [{
-          system: IDENTIFIER_SYSTEM,
-          value: "ems-condition-" + PATIENT_ID
-        }],
-        clinicalStatus: {
-          coding: [{
-            system: "http://terminology.hl7.org/CodeSystem/condition-clinical",
-            code: "active",
-            display: "Active"
-          }]
-        },
-        verificationStatus: {
-          coding: [{
-            system: "http://terminology.hl7.org/CodeSystem/condition-ver-status",
-            code: "provisional",
-            display: "Provisional"
-          }]
-        },
-        category: [{
-          coding: [{
-            system: "http://terminology.hl7.org/CodeSystem/condition-category",
-            code: "encounter-diagnosis",
-            display: "Encounter Diagnosis"
-          }]
-        }],
-        code: {
-          coding: [{
-            system: "http://snomed.info/sct",
-            code: "267036007",
-            display: "Dyspnea"
-          }],
-          text: "Dyspnea"
-        },
-        subject: {
-          reference: "Patient/" + PATIENT_ID,
-          display: "Antonio Carmona"
-        },
-        encounter: {
-          reference: "Encounter/" + emsEncounter.id
-        },
-        onsetDateTime: emsStart.toISOString(),
-        recordedDate: emsStart.toISOString()
-      }
+    const conditions = conditionResults.map(
+      summarizeCondition
     );
 
-    const hospitalEncounter = await findOrCreate(
-      "Encounter",
-      "hospital-encounter-" + PATIENT_ID,
-      {
-        resourceType: "Encounter",
-        meta: profileMeta(ENCOUNTER_PROFILE),
-        identifier: [{
-          system: IDENTIFIER_SYSTEM,
-          value: "hospital-encounter-" + PATIENT_ID
-        }],
-        status: "in-progress",
-        class: {
-          system: "http://terminology.hl7.org/CodeSystem/v3-ActCode",
-          code: "IMP",
-          display: "inpatient encounter"
-        },
-        type: [{
-          text: "Hospital admission following EMS transport"
-        }],
-        subject: {
-          reference: "Patient/" + PATIENT_ID,
-          display: "Antonio Carmona"
-        },
-        period: {
-          start: hospitalStart.toISOString()
-        },
-        serviceProvider: {
-          reference: "Organization/" + ORGANIZATION_ID
-        },
-        reasonReference: [{
-          reference: "Condition/" + emsCondition.id,
-          display: "EMS provisional diagnosis: Dyspnea"
-        }]
-      }
-    );
+    const report = {
+      patient: "Antonio Carmona",
+      patientId: "845ac958-8036-45ee-9112-eac31d9b4f30",
+      encounters: encounters,
+      conditions: conditions
+    };
 
-    const hospitalCondition = await findOrCreate(
-      "Condition",
-      "hospital-condition-" + PATIENT_ID,
-      {
-        resourceType: "Condition",
-        meta: profileMeta(CONDITION_PROFILE),
-        identifier: [{
-          system: IDENTIFIER_SYSTEM,
-          value: "hospital-condition-" + PATIENT_ID
-        }],
-        clinicalStatus: {
-          coding: [{
-            system: "http://terminology.hl7.org/CodeSystem/condition-clinical",
-            code: "active",
-            display: "Active"
-          }]
-        },
-        verificationStatus: {
-          coding: [{
-            system: "http://terminology.hl7.org/CodeSystem/condition-ver-status",
-            code: "confirmed",
-            display: "Confirmed"
-          }]
-        },
-        category: [{
-          coding: [{
-            system: "http://terminology.hl7.org/CodeSystem/condition-category",
-            code: "encounter-diagnosis",
-            display: "Encounter Diagnosis"
-          }]
-        }],
-        code: {
-          coding: [{
-            system: "http://snomed.info/sct",
-            code: "233604007",
-            display: "Pneumonia"
-          }],
-          text: "Pneumonia"
-        },
-        subject: {
-          reference: "Patient/" + PATIENT_ID,
-          display: "Antonio Carmona"
-        },
-        encounter: {
-          reference: "Encounter/" + hospitalEncounter.id
-        },
-        onsetDateTime: hospitalStart.toISOString(),
-        recordedDate: now.toISOString()
-      }
-    );
-
-    write("");
-    write("SUCCESS: Test scenario created or existing demo records reused.");
-    write("EMS Encounter: " + emsEncounter.id);
-    write("EMS provisional Condition: " + emsCondition.id);
-    write("Hospital Encounter: " + hospitalEncounter.id);
-    write("Hospital confirmed Condition: " + hospitalCondition.id);
+    results.textContent = JSON.stringify(report, null, 2);
 
     status.textContent =
-      "Scenario setup complete. Return to the main dashboard.";
+      "Inspection complete. No records were changed.";
 
   } catch (error) {
-    status.textContent = "Setup could not be completed.";
+    status.textContent = "Could not inspect all records.";
 
-    write("");
-    write("Error: " + (error.message || String(error)));
-    write("Copy this error and send it to me.");
+    results.textContent =
+      error.message || String(error);
+
   } finally {
-    createButton.disabled = false;
+    inspectButton.disabled = false;
   }
 }
 
-createButton.addEventListener("click", createScenario);
+inspectButton.addEventListener(
+  "click",
+  inspectRecords
+);
 
-if (window.FHIR && FHIR.oauth2) {
+if (!window.FHIR || !FHIR.oauth2) {
+  status.textContent =
+    "SMART library did not load. Refresh the page.";
+} else {
   FHIR.oauth2.ready()
     .then(authorizedClient => {
       client = authorizedClient;
       status.textContent =
-        "Authorized. Ready to create the synthetic test scenario.";
-      createButton.hidden = false;
+        "Connected with read-only access. Ready to inspect.";
+      inspectButton.hidden = false;
     })
     .catch(() => {
       status.textContent =
-        "Sign in with temporary test-data permissions.";
+        "Please authorize read-only access.";
       loginButton.hidden = false;
     });
-} else {
-  status.textContent =
-    "SMART library did not load. Refresh the page.";
 }
 </script>
-
 </body>
 </html>
