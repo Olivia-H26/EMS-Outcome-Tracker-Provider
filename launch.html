@@ -1,16 +1,12 @@
-```html
+
 <!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>EMS Outcome Tracker | Provider Sign In</title>
-
   <script src="https://cdn.jsdelivr.net/npm/fhirclient@3.0.1/bundle/fhir-client.js"></script>
-
   <style>
-    * { box-sizing: border-box; }
-
     body {
       font-family: system-ui, sans-serif;
       max-width: 650px;
@@ -20,40 +16,26 @@
       color: #263445;
       background: #f5f7fa;
     }
-
     main {
       background: white;
       padding: 2rem;
       border-radius: 12px;
       border: 1px solid #dce3ea;
-      box-shadow: 0 4px 15px rgba(0,0,0,.04);
     }
-
-    h1 {
-      color: #173b57;
-      margin-bottom: .25rem;
-    }
-
-    .subtitle { color: #64748b; }
-
+    h1 { color: #173b57; }
     .status {
       margin-top: 1.5rem;
       padding: 1rem;
       background: #eef4f8;
       border-radius: 8px;
     }
-
     #error {
       color: #a21c1c;
       background: #fff1f1;
       padding: 1rem;
-      border-radius: 8px;
       overflow-wrap: anywhere;
     }
-
-    #retry {
-      display: none;
-      margin-top: 1rem;
+    button {
       padding: .8rem 1.2rem;
       background: #173b57;
       color: white;
@@ -64,44 +46,31 @@
     }
   </style>
 </head>
-
 <body>
   <main>
     <h1>EMS Outcome Tracker</h1>
-
     <p><strong>Provider sign in</strong></p>
-
-    <p class="subtitle">
-      Secure provider access to the read-only EMS-to-hospital
-      clinical continuity dashboard.
-    </p>
-
+    <p>Sign in using your assigned EMS Practitioner identity.</p>
     <p class="status" id="status" role="status">
       Preparing SMART authentication…
     </p>
-
     <p id="error" role="alert" hidden></p>
-
-    <button id="retry" type="button" onclick="startAuthorization()">
-      Retry sign in
-    </button>
+    <button id="retry" type="button" hidden>Retry sign in</button>
   </main>
 
   <script>
     "use strict";
 
     const FHIR_SERVER =
-      "https://launch.smarthealthit.org/v/r4/sim/WzIsIiIsIiIsIk1BTlVBTCIsMCwwLDAsIiIsIiIsIiIsIiIsIiIsIiIsIiIsMCwyLCIiXQ/fhir";
+      "https://launch.smarthealthit.org/v/r4/sim/WzIsIiIsIjQ5NjUyNzUsNDk2NTI3NCw0OTY1MjczIiwiQVVUTyIsMCwwLDAsIiIsIiIsIiIsIiIsIiIsIiIsIiIsMCwyLCIiXQ/fhir";
 
     const CLIENT_ID = "my_web_app";
+    const REDIRECT_URI = new URL("index.html", window.location.href).href;
 
-    const REDIRECT_URI =
-      new URL("index.html", window.location.href).href;
-
-    // Read-only access to clinical records and EMS personnel.
     const SCOPES = [
       "openid",
       "fhirUser",
+      "launch/patient",
       "user/Patient.read",
       "user/Encounter.read",
       "user/Condition.read",
@@ -110,33 +79,18 @@
       "user/Organization.read"
     ].join(" ");
 
-    function setStatus(message) {
-      document.getElementById("status").textContent = message;
-    }
-
-    function showError(message) {
-      const node = document.getElementById("error");
-      node.hidden = false;
-      node.textContent = message;
-      document.getElementById("retry").style.display = "inline-block";
-    }
-
     function startAuthorization() {
-      document.getElementById("error").hidden = true;
-      document.getElementById("retry").style.display = "none";
+      const errorNode = document.getElementById("error");
+      const retry = document.getElementById("retry");
+      errorNode.hidden = true;
+      retry.hidden = true;
+      document.getElementById("status").textContent =
+        "Connecting to the EMS provider SMART sandbox…";
 
-      setStatus(
-        "Connecting to the SMART Health IT FHIR R4 sandbox…"
-      );
-
-      if (
-        !window.FHIR ||
-        !FHIR.oauth2 ||
-        typeof FHIR.oauth2.authorize !== "function"
-      ) {
-        showError(
-          "The SMART JavaScript client could not be loaded. Check your internet connection and reload this page."
-        );
+      if (!window.FHIR || !FHIR.oauth2) {
+        errorNode.textContent = "The SMART client library did not load.";
+        errorNode.hidden = false;
+        retry.hidden = false;
         return;
       }
 
@@ -147,16 +101,20 @@
         iss: FHIR_SERVER,
         pkceMode: "required"
       }).catch(error => {
-        console.error("SMART authorization error:", error);
-        setStatus("Provider authorization could not be started.");
-        showError(
-          error && error.message ? error.message : String(error)
-        );
+        console.error(error);
+        errorNode.textContent = error.message || String(error);
+        errorNode.hidden = false;
+        retry.hidden = false;
+        document.getElementById("status").textContent =
+          "Provider sign-in could not be started.";
       });
     }
+
+    document.getElementById("retry").addEventListener(
+      "click", startAuthorization
+    );
 
     document.addEventListener("DOMContentLoaded", startAuthorization);
   </script>
 </body>
 </html>
-```
