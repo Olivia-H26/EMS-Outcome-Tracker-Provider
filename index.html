@@ -89,7 +89,7 @@ footer {text-align:center;color:var(--muted);font-size:.85rem;padding:1rem}
 
     <section class="panel">
       <h2>EMS Personnel Records</h2>
-      <p class="muted">Checking the three Practitioner IDs supplied for this project.</p>
+      <p class="muted">Verifying the three project Practitioner identities.</p>
       <div id="ems-personnel-list">Checking Practitioner records...</div>
     </section>
 
@@ -132,7 +132,11 @@ footer {text-align:center;color:var(--muted);font-size:.85rem;padding:1rem}
 "use strict";
 
 (function () {
-  const PERSONNEL_IDS = ["4960595", "4960593", "4960591"];
+  const PERSONNEL = [
+    {id:"4965275", role:"Demo Paramedic EMT"},
+    {id:"4965274", role:"Demo Intermediate EMT"},
+    {id:"4965273", role:"Demo Basic EMT"}
+  ];
 
   const $ = id => document.getElementById(id);
   let client = null;
@@ -232,6 +236,10 @@ footer {text-align:center;color:var(--muted);font-size:.85rem;padding:1rem}
       h.appendChild(document.createTextNode(nameOf(user)));
       area.appendChild(h);
       field(area, "FHIR Practitioner ID", user.id || "Not supplied");
+
+      const match = PERSONNEL.find(person => person.id === user.id);
+      field(area, "Project EMS Role", match ? match.role : "Not one of the three configured project identities");
+
       if (user.resourceType !== "Practitioner") {
         area.appendChild(document.createTextNode(
           "The SMART user resource was returned, but it was not a Practitioner resource."
@@ -247,11 +255,11 @@ footer {text-align:center;color:var(--muted);font-size:.85rem;padding:1rem}
     const area = $("ems-personnel-list");
     area.replaceChildren();
 
-    for (const id of PERSONNEL_IDS) {
+    for (const person of PERSONNEL) {
       const row = document.createElement("div");
       row.className = "person-row";
       const title = document.createElement("strong");
-      title.textContent = "Practitioner " + id;
+      title.textContent = person.role + " · Practitioner " + person.id;
       row.appendChild(title);
       const detail = document.createElement("div");
       detail.className = "muted";
@@ -260,7 +268,7 @@ footer {text-align:center;color:var(--muted);font-size:.85rem;padding:1rem}
       area.appendChild(row);
 
       try {
-        const resource = await client.request("Practitioner/" + encodeURIComponent(id));
+        const resource = await client.request("Practitioner/" + encodeURIComponent(person.id));
         if (resource && resource.resourceType === "Practitioner") {
           detail.textContent = nameOf(resource) + " · Record found";
           detail.className = "good";
