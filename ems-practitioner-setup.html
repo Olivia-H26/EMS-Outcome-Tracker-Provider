@@ -1,3 +1,4 @@
+
 <!doctype html>
 <html lang="en">
 <head>
@@ -42,9 +43,7 @@
       opacity: .5;
       cursor: not-allowed;
     }
-    #apply {
-      background: #276749;
-    }
+    #apply { background: #276749; }
     #output {
       white-space: pre-wrap;
       overflow-wrap: anywhere;
@@ -60,9 +59,7 @@
       padding: 1rem;
       border-radius: 8px;
     }
-    .error {
-      color: #a21c1c;
-    }
+    .error { color: #a21c1c; }
     .small {
       font-size: .9rem;
       color: #526273;
@@ -131,15 +128,9 @@
 const ROOT =
   "https://olivia-h26.github.io/EMS-Outcome-Tracker-Provider";
 
-const ID_SYSTEM =
-  ROOT + "/identifiers/ems-demo";
-
-const TAG_SYSTEM =
-  ROOT + "/tags";
-
-const NUCC_SYSTEM =
-  "http://nucc.org/provider-taxonomy";
-
+const ID_SYSTEM = ROOT + "/identifiers/ems-demo";
+const TAG_SYSTEM = ROOT + "/tags";
+const NUCC_SYSTEM = "http://nucc.org/provider-taxonomy";
 const PROFILE_VERSION = "6.1.0";
 
 const PROFILES = {
@@ -188,6 +179,7 @@ let repairPlan = null;
 
 const output = document.getElementById("output");
 const errorBox = document.getElementById("error");
+const connection = document.getElementById("connection");
 const inspectButton = document.getElementById("inspect");
 const applyButton = document.getElementById("apply");
 
@@ -199,12 +191,38 @@ function fail(message) {
   errorBox.textContent = message;
 }
 
+/*
+ * FHIRClient 3 exposes the connected server as fhirBaseUrl.
+ * getState("serverUrl") is a documented fallback.
+ */
+function getConnectedServerUrl(client) {
+  let url = client && client.fhirBaseUrl;
+
+  if (!url && client &&
+      typeof client.getState === "function") {
+    url = client.getState("serverUrl");
+  }
+
+  if (!url && client && client.state) {
+    url = client.state.serverUrl;
+  }
+
+  if (typeof url !== "string" ||
+      !/^https?:\/\/.+/i.test(url)) {
+    throw new Error(
+      "SMART authorization returned a client, but its FHIR " +
+      "server address could not be read. Please share this message."
+    );
+  }
+
+  return url.replace(/\/+$/, "");
+}
+
 function addProfile(resource, canonical) {
   resource.meta = resource.meta || {};
   resource.meta.profile = resource.meta.profile || [];
 
-  const profile =
-    canonical + "|" + PROFILE_VERSION;
+  const profile = canonical + "|" + PROFILE_VERSION;
 
   if (!resource.meta.profile.includes(profile)) {
     resource.meta.profile.push(profile);
@@ -254,9 +272,7 @@ async function findUniqueByIdentifier(resourceType, value) {
 }
 
 async function createOrReuseOrganization(existing) {
-  if (existing) {
-    return existing;
-  }
+  if (existing) return existing;
 
   const organization = {
     resourceType: "Organization",
@@ -289,9 +305,7 @@ async function createOrReuseOrganization(existing) {
 }
 
 async function createOrReusePractitioner(existing, type) {
-  if (existing) {
-    return existing;
-  }
+  if (existing) return existing;
 
   const practitioner = {
     resourceType: "Practitioner",
@@ -334,27 +348,11 @@ function prepareRole(role, type, practitioner, organization) {
     display: "EMS Demonstration Agency"
   };
 
-  role.active = role.active === false ? false : true;
-
   /*
-   * Keep the exact professional level in the role description.
-   * Do not assign the broader Paramedic SNOMED occupation code
-   * to Basic or Intermediate EMT.
-   *
-   * Code uses a text-only CodeableConcept because a verified,
-   * level-specific Care Team Member Function code has not been
-   * established for these EMS levels.
+   * Preserve the existing active value and existing role.code.
+   * Do not assign an unverified Care Team Member Function code.
    */
-  role.code = [{
-    text:
-      "Emergency medical response — " +
-      type.title +
-      " level"
-  }];
 
-  /*
-   * NUCC provider taxonomy belongs in specialty.
-   */
   role.specialty = [{
     coding: [{
       system: NUCC_SYSTEM,
@@ -415,7 +413,7 @@ async function inspectRecords() {
         throw new Error(
           "Expected existing PractitionerRole not found: " +
           type.roleId +
-          ". No repairs were applied. Please report this result."
+          ". No repairs were applied."
         );
       }
     }
@@ -441,6 +439,11 @@ async function inspectRecords() {
       const practitioner = practitioners[type.level];
       const role = roles[type.level];
 
+      const specialtyCodes = (role.specialty || [])
+        .flatMap(s => s.coding || [])
+        .filter(c => c.system === NUCC_SYSTEM)
+        .map(c => c.code);
+
       lines.push(
         type.title + ": " +
         (practitioner
@@ -453,16 +456,29 @@ async function inspectRecords() {
       );
 
       lines.push(
-        "  NUCC specialty: " + type.code
+        "  Expected NUCC: " + type.code
       );
 
       lines.push(
-        "  Existing Practitioner reference: " +
+        "  Existing NUCC codes: " +
+        (specialtyCodes.join(", ") || "none found")
+      );
+
+      lines.push(
+        "  Existing role code text: " +
+        ((role.code || [])
+          .map(c => c.text || "")
+          .filter(Boolean)
+          .join("; ") || "none")
+      );
+
+      lines.push(
+        "  Practitioner reference: " +
         (role.practitioner?.reference || "missing")
       );
 
       lines.push(
-        "  Existing Organization reference: " +
+        "  Organization reference: " +
         (role.organization?.reference || "missing")
       );
 
@@ -470,10 +486,11 @@ async function inspectRecords() {
     }
 
     lines.push(
-      "No FHIR records have been created or changed.",
-      "",
-      "Review the results. If they match the expected demo records,",
-      "you may select Apply repairs."
+      "No FHIR records have been created or changed."
+    );
+
+    lines.push(
+      "Review these results before selecting Apply repairs."
     );
 
     show(lines.join("\n"));
@@ -516,9 +533,7 @@ async function applyRepairs() {
 
   try {
     const organization =
-      await createOrReuseOrganization(
-        repairPlan.organization
-      );
+      await createOrReuseOrganization(repairPlan.organization);
 
     lines.push(
       "Organization ready: Organization/" + organization.id
@@ -539,7 +554,6 @@ async function applyRepairs() {
       lines.push(
         type.title + ": Practitioner/" + practitioner.id
       );
-
       show(lines.join("\n"));
     }
 
@@ -566,13 +580,11 @@ async function applyRepairs() {
         "Updated existing PractitionerRole/" + updated.id +
         " for " + type.title
       );
-
       show(lines.join("\n"));
     }
 
     lines.push("");
     lines.push("VERIFYING SAVED RECORDS...");
-
     show(lines.join("\n"));
 
     const verification = [];
@@ -584,8 +596,7 @@ async function applyRepairs() {
       );
 
       const expectedPractitioner =
-        "Practitioner/" +
-        savedPractitioners[type.level].id;
+        "Practitioner/" + savedPractitioners[type.level].id;
 
       const expectedOrganization =
         "Organization/" + organization.id;
@@ -626,9 +637,7 @@ async function applyRepairs() {
         result.organizationOK &&
         result.specialtyOK;
 
-      if (!passed) {
-        allPassed = false;
-      }
+      if (!passed) allPassed = false;
 
       lines.push("");
       lines.push(result.title);
@@ -665,9 +674,7 @@ async function applyRepairs() {
     }
 
     lines.push("");
-    lines.push(
-      "No FHIR resources were deleted."
-    );
+    lines.push("No FHIR resources were deleted.");
 
     show(lines.join("\n"));
 
@@ -700,15 +707,10 @@ async function initialize() {
 
     smartClient = await FHIR.oauth2.ready();
 
-    if (!smartClient || !smartClient.serverUrl) {
-      throw new Error(
-        "SMART authorization completed without a FHIR server URL."
-      );
-    }
+    const serverUrl = getConnectedServerUrl(smartClient);
 
-    document.getElementById("connection").textContent =
-      "Connected. Authorized FHIR server: " +
-      smartClient.serverUrl;
+    connection.textContent =
+      "Connected. Authorized FHIR server: " + serverUrl;
 
     show(
       "SMART connection ready.\n\n" +
@@ -718,7 +720,8 @@ async function initialize() {
     inspectButton.disabled = false;
 
   } catch (error) {
-    document.getElementById("connection").textContent =
+    smartClient = null;
+    connection.textContent =
       "SMART connection could not be completed.";
 
     fail(error.message || String(error));
