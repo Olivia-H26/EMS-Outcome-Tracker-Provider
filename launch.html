@@ -61,7 +61,7 @@
     "use strict";
 
     const FHIR_SERVER =
-      "https://launch.smarthealthit.org/v/r4/sim/WzIsIiIsIjQ5NjUyNzUsNDk2NTI3NCw0OTY1MjczIiwiQVVUTyIsMCwwLDAsIiIsIiIsIiIsIiIsIiIsIiIsIiIsMCwyLCIiXQ/fhir";
+      "https://launch.smarthealthit.org/v/r4/sim/WzIsIiIsIjQ5NjUyNzUsNDk2NTI3NCwiQVVUTyIsMCwwLDAsIiIsIiIsIiIsIiIsIiIsIiIsIiIsMCwyLCIiXQ/fhir";
 
     const CLIENT_ID = "my_web_app";
     const REDIRECT_URI = new URL("index.html", window.location.href).href;
@@ -72,19 +72,19 @@
       "launch/patient",
 
       "user/Patient.read",
-      "user/Patient.write",
+      "user/Patient.create",
 
       "user/Encounter.read",
-      "user/Encounter.write",
+      "user/Encounter.create",
 
       "user/Condition.read",
-      "user/Condition.write",
+      "user/Condition.create",
 
       "user/ClinicalImpression.read",
-      "user/ClinicalImpression.write",
+      "user/ClinicalImpression.create",
 
       "user/Provenance.read",
-      "user/Provenance.write",
+      "user/Provenance.create",
 
       "user/Practitioner.read",
       "user/PractitionerRole.read",
