@@ -1,3 +1,4 @@
+```html
 <!doctype html>
 <html lang="en">
 <head>
@@ -8,9 +9,7 @@
   <script src="https://cdn.jsdelivr.net/npm/fhirclient@3.0.1/bundle/fhir-client.js"></script>
 
   <style>
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
     body {
       font-family: system-ui, sans-serif;
@@ -35,9 +34,7 @@
       margin-bottom: .25rem;
     }
 
-    .subtitle {
-      color: #64748b;
-    }
+    .subtitle { color: #64748b; }
 
     .status {
       margin-top: 1.5rem;
@@ -85,11 +82,7 @@
 
     <p id="error" role="alert" hidden></p>
 
-    <button
-      id="retry"
-      type="button"
-      onclick="startAuthorization()"
-    >
+    <button id="retry" type="button" onclick="startAuthorization()">
       Retry sign in
     </button>
   </main>
@@ -105,13 +98,16 @@
     const REDIRECT_URI =
       new URL("index.html", window.location.href).href;
 
-    // Read-only SMART scopes for provider access.
+    // Read-only access to clinical records and EMS personnel.
     const SCOPES = [
       "openid",
       "fhirUser",
       "user/Patient.read",
       "user/Encounter.read",
-      "user/Condition.read"
+      "user/Condition.read",
+      "user/Practitioner.read",
+      "user/PractitionerRole.read",
+      "user/Organization.read"
     ].join(" ");
 
     function setStatus(message) {
@@ -120,19 +116,14 @@
 
     function showError(message) {
       const node = document.getElementById("error");
-
       node.hidden = false;
       node.textContent = message;
-
-      document.getElementById("retry").style.display =
-        "inline-block";
+      document.getElementById("retry").style.display = "inline-block";
     }
 
     function startAuthorization() {
       document.getElementById("error").hidden = true;
-
-      document.getElementById("retry").style.display =
-        "none";
+      document.getElementById("retry").style.display = "none";
 
       setStatus(
         "Connecting to the SMART Health IT FHIR R4 sandbox…"
@@ -157,23 +148,15 @@
         pkceMode: "required"
       }).catch(error => {
         console.error("SMART authorization error:", error);
-
-        setStatus(
-          "Provider authorization could not be started."
-        );
-
+        setStatus("Provider authorization could not be started.");
         showError(
-          error && error.message
-            ? error.message
-            : String(error)
+          error && error.message ? error.message : String(error)
         );
       });
     }
 
-    document.addEventListener(
-      "DOMContentLoaded",
-      startAuthorization
-    );
+    document.addEventListener("DOMContentLoaded", startAuthorization);
   </script>
 </body>
 </html>
+```
