@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>EMS Duplicate Checker</title>
-<script src="https://cdn.jsdelivr.net/npm/fhirclient@3.0.1/bundle/fhir-client.js"></script>
+<title>EMS Outcome Tracker | Seed Synthetic Demo Data</title>
+<script src="https://jsdelivr.net"></script>
 <style>
 body {
   font-family: system-ui, sans-serif;
@@ -28,8 +28,12 @@ button {
   border: 0;
   border-radius: 7px;
   cursor: pointer;
-  margin: 8px 0;
+  margin: 8px 6px 8px 0;
+  font-size: 1rem;
+  font-weight: 600;
 }
+button:hover { background: #173b57; }
+button:disabled { opacity: 0.6; cursor: wait; }
 pre {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
@@ -42,15 +46,18 @@ pre {
 <body>
 <main>
 <h1>EMS Outcome Tracker</h1>
-<h2>Duplicate Record Checker</h2>
+<h2>Seed Synthetic EMS-to-Hospital Demo Records</h2>
 
-<p>This page checks the existing synthetic test records.</p>
-<p><strong>It does not create, update, or delete anything.</strong></p>
+<p>
+  Creates a linked prehospital EMS <code>Encounter</code>, provisional EMS field impression
+  <code>Condition</code>, receiving hospital <code>Encounter</code> (with <code>reasonReference</code>),
+  and confirmed hospital <code>Condition</code> for <strong>Antonio Carmona</strong>.
+</p>
 
 <p id="status">Connecting to the SMART sandbox...</p>
 
-<button id="login" hidden>Authorize read-only access</button>
-<button id="inspect" hidden>Check duplicate records</button>
+<button id="login" hidden>Authorize write access</button>
+<button id="seed" hidden>Seed EMS-to-Hospital Demo</button>
 
 <pre id="results">Waiting for connection...</pre>
 </main>
@@ -59,40 +66,40 @@ pre {
 "use strict";
 
 const SERVER =
-"https://launch.smarthealthit.org/v/r4/sim/WzIsIiIsIiIsIk1BTlVBTCIsMCwwLDAsIiIsIiIsIiIsIiIsIiIsIiIsIiIsMCwyLCIiXQ/fhir";
+  "https://smarthealthit.org";
 
 const CLIENT_ID = "my_web_app";
-
-const REDIRECT_URI =
-window.location.origin + window.location.pathname;
+const REDIRECT_URI = window.location.origin + window.location.pathname;
 
 const SCOPES = [
   "openid",
   "fhirUser",
-  "user/Encounter.rs",
-  "user/Condition.rs"
+  "user/Patient.read",
+  "user/Encounter.read",
+  "user/Encounter.write",
+  "user/Condition.read",
+  "user/Condition.write"
 ].join(" ");
 
-const ENCOUNTER_IDS = [
-  "4949143",
-  "4949145",
-  "4949147",
-  "4949149"
-];
+const PATIENT_REF = "Patient/845ac958-8036-45ee-9112-eac31d9b4f30";
+const PATIENT_DISPLAY = "Antonio Carmona";
 
-const CONDITION_IDS = [
-  "4949144",
-  "4949146",
-  "4949148",
-  "4949150"
-];
+const DEMO_TAG = {
+  system: "https://github.io",
+  code: "synthetic-demo",
+  display: "Synthetic EMS Outcome Tracker Demo"
+};
+
+const DEMO_META = {
+  tag: [DEMO_TAG]
+};
 
 let client = null;
 
-const status = document.getElementById("status");
+const statusEl = document.getElementById("status");
 const results = document.getElementById("results");
 const loginButton = document.getElementById("login");
-const inspectButton = document.getElementById("inspect");
+const seedButton = document.getElementById("seed");
 
 function authorize() {
   FHIR.oauth2.authorize({
@@ -102,150 +109,245 @@ function authorize() {
     iss: SERVER,
     pkceMode: "required"
   }).catch(error => {
-    status.textContent = "Authorization failed.";
+    statusEl.textContent = "Authorization failed.";
     results.textContent = error.message || String(error);
   });
 }
 
 loginButton.addEventListener("click", authorize);
 
-function getText(concept) {
-  if (!concept) return "Not recorded";
-
-  if (concept.text) return concept.text;
-
-  if (Array.isArray(concept.coding)) {
-    return concept.coding
-      .map(item => item.display || item.code)
-      .filter(Boolean)
-      .join(", ");
-  }
-
-  return "Not recorded";
-}
-
-function getReference(reference) {
-  if (!reference) return [];
-
-  const items = Array.isArray(reference)
-    ? reference
-    : [reference];
-
-  return items.map(item => ({
-    reference: item.reference || "",
-    display: item.display || ""
-  }));
-}
-
-function hasDemoTag(resource) {
-  return (resource.meta?.tag || []).some(tag =>
-    tag.system ===
-      "https://olivia-h26.github.io/EMS-Outcome-Tracker-Provider/demo" &&
-    tag.code === "synthetic-demo"
-  );
-}
-
-function summarizeEncounter(resource) {
-  return {
-    id: resource.id,
-    type: getText(resource.type),
-    status: resource.status,
-    class: resource.class?.code || "",
-    start: resource.period?.start || "",
-    patient: resource.subject?.reference || "",
-    reasonReference: getReference(resource.reasonReference),
-    syntheticDemoTag: hasDemoTag(resource)
-  };
-}
-
-function summarizeCondition(resource) {
-  const verification = resource.verificationStatus?.coding || [];
-
-  return {
-    id: resource.id,
-    code: getText(resource.code),
-    verificationStatus: verification.map(item => item.code),
-    encounter: resource.encounter?.reference || "",
-    patient: resource.subject?.reference || "",
-    syntheticDemoTag: hasDemoTag(resource)
-  };
-}
-
-async function readResource(type, id) {
-  return client.request(type + "/" + id);
-}
-
-async function inspectRecords() {
-  inspectButton.disabled = true;
-  status.textContent = "Checking the eight records...";
+async function seedDemoRecords() {
+  seedButton.disabled = true;
+  statusEl.textContent = "Checking for existing synthetic demo records...";
   results.textContent = "";
 
   try {
-    const encounterResults = await Promise.all(
-      ENCOUNTER_IDS.map(id =>
-        readResource("Encounter", id)
-      )
+    // 1. Check if synthetic demo encounters already exist for this patient
+    const tagQuery = encodeURIComponent(`${DEMO_TAG.system}|${DEMO_TAG.code}`);
+    const existing = await client.request(
+      `Encounter?patient=845ac958-8036-45ee-9112-eac31d9b4f30&_tag=${tagQuery}`
     );
 
-    const conditionResults = await Promise.all(
-      CONDITION_IDS.map(id =>
-        readResource("Condition", id)
-      )
-    );
+    if ((existing?.entry || []).length > 0) {
+      statusEl.textContent = "Synthetic demo records already exist. No duplicates created.";
+      results.textContent = JSON.stringify(
+        {
+          message: "Existing tagged encounters found for Antonio Carmona",
+          existingEncounterIds: existing.entry.map(e => e.resource.id)
+        },
+        null,
+        2
+      );
+      return;
+    }
 
-    const encounters = encounterResults.map(
-      summarizeEncounter
-    );
-
-    const conditions = conditionResults.map(
-      summarizeCondition
-    );
-
-    const report = {
-      patient: "Antonio Carmona",
-      patientId: "845ac958-8036-45ee-9112-eac31d9b4f30",
-      encounters: encounters,
-      conditions: conditions
-    };
-
-    results.textContent = JSON.stringify(report, null, 2);
-
-    status.textContent =
-      "Inspection complete. No records were changed.";
-
-  } catch (error) {
-    status.textContent = "Could not inspect all records.";
-
-    results.textContent =
-      error.message || String(error);
-
-  } finally {
-    inspectButton.disabled = false;
-  }
-}
-
-inspectButton.addEventListener(
-  "click",
-  inspectRecords
-);
-
-if (!window.FHIR || !FHIR.oauth2) {
-  status.textContent =
-    "SMART library did not load. Refresh the page.";
-} else {
-  FHIR.oauth2.ready()
-    .then(authorizedClient => {
-      client = authorizedClient;
-      status.textContent =
-        "Connected with read-only access. Ready to inspect.";
-      inspectButton.hidden = false;
-    })
-    .catch(() => {
-      status.textContent =
-        "Please authorize read-only access.";
-      loginButton.hidden = false;
+    // 2. Create Prehospital EMS Encounter (US Core 6.1.0 Encounter)
+    statusEl.textContent = "Creating prehospital EMS Encounter...";
+    const emsEncounter = await client.create({
+      resourceType: "Encounter",
+      meta: {
+        ...DEMO_META,
+        profile: ["http://hl7.org"]
+      },
+      status: "finished",
+      class: {
+        system: "http://hl7.org",
+        code: "EMER",
+        display: "emergency"
+      },
+      type: [
+        {
+          coding: [
+            {
+              system: "http://snomed.info",
+              code: "408443003",
+              display: "Emergency medical service"
+            }
+          ],
+          text: "Prehospital EMS Response & Transport"
+        }
+      ],
+      subject: {
+        reference: PATIENT_REF,
+        display: PATIENT_DISPLAY
+      },
+      period: {
+        start: "2026-11-18T14:10:00Z",
+        end: "2026-11-18T14:48:00Z"
+      }
     });
-}
-</script>
-</body>
-</html>
+
+    // 3. Create EMS Field Impression Condition (provisional encounter-diagnosis)
+    statusEl.textContent = "Creating provisional EMS field impression Condition...";
+    const emsCondition = await client.create({
+      resourceType: "Condition",
+      meta: {
+        ...DEMO_META,
+        profile: [
+          "http://hl7.org"
+        ]
+      },
+      verificationStatus: {
+        coding: [
+          {
+            system: "http://hl7.org",
+            code: "provisional",
+            display: "Provisional"
+          }
+        ],
+        text: "Provisional"
+      },
+      category: [
+        {
+          coding: [
+            {
+              system: "http://hl7.org",
+              code: "encounter-diagnosis",
+              display: "Encounter Diagnosis"
+            }
+          ],
+          text: "Encounter Diagnosis"
+        }
+      ],
+      code: {
+        coding: [
+          {
+            system: "http://snomed.info",
+            code: "29857009",
+            display: "Chest pain"
+          },
+          {
+            system: "http://hl7.org",
+            code: "R07.9",
+            display: "Chest pain, unspecified"
+          }
+        ],
+        text: "Acute chest pain, suspected cardiac origin (EMS Field Impression)"
+      },
+      subject: {
+        reference: PATIENT_REF,
+        display: PATIENT_DISPLAY
+      },
+      encounter: {
+        reference: `Encounter/${emsEncounter.id}`,
+        display: "Prehospital EMS Response & Transport"
+      },
+      recordedDate: "2026-11-18T14:25:00Z"
+    });
+
+    // 4. Create Hospital Encounter referencing the EMS Condition via reasonReference
+    statusEl.textContent = "Creating hospital Encounter linked via reasonReference...";
+    const hospitalEncounter = await client.create({
+      resourceType: "Encounter",
+      meta: {
+        ...DEMO_META,
+        profile: ["http://hl7.org"]
+      },
+      status: "finished",
+      class: {
+        system: "http://hl7.org",
+        code: "EMER",
+        display: "emergency"
+      },
+      type: [
+        {
+          coding: [
+            {
+              system: "http://snomed.info",
+              code: "4525004",
+              display: "Emergency department patient visit"
+            }
+          ],
+          text: "Hospital Emergency Department & Inpatient Care"
+        }
+      ],
+      subject: {
+        reference: PATIENT_REF,
+        display: PATIENT_DISPLAY
+      },
+      period: {
+        start: "2026-11-18T14:50:00Z",
+        end: "2026-11-20T11:30:00Z"
+      },
+      reasonReference: [
+        {
+          reference: `Condition/${emsCondition.id}`,
+          display: "Acute chest pain, suspected cardiac origin (EMS Field Impression)"
+        }
+      ],
+      hospitalization: {
+        dischargeDisposition: {
+          coding: [
+            {
+              system: "http://hl7.org",
+              code: "home",
+              display: "Home"
+            }
+          ],
+          text: "Discharged home in stable condition"
+        }
+      }
+    });
+
+    // 5. Create Confirmed Hospital Condition
+    statusEl.textContent = "Creating confirmed hospital Condition...";
+    const hospitalCondition = await client.create({
+      resourceType: "Condition",
+      meta: {
+        ...DEMO_META,
+        profile: [
+          "http://hl7.org"
+        ]
+      },
+      verificationStatus: {
+        coding: [
+          {
+            system: "http://hl7.org",
+            code: "confirmed",
+            display: "Confirmed"
+          }
+        ],
+        text: "Confirmed"
+      },
+      category: [
+        {
+          coding: [
+            {
+              system: "http://hl7.org",
+              code: "encounter-diagnosis",
+              display: "Encounter Diagnosis"
+            }
+          ],
+          text: "Encounter Diagnosis"
+        }
+      ],
+      code: {
+        coding: [
+          {
+            system: "http://snomed.info",
+            code: "57054005",
+            display: "Acute myocardial infarction"
+          },
+          {
+            system: "http://hl7.org",
+            code: "I21.4",
+            display: "Non-ST elevation (NSTEMI) myocardial infarction"
+          }
+        ],
+        text: "Non-ST elevation myocardial infarction (NSTEMI)"
+      },
+      subject: {
+        reference: PATIENT_REF,
+        display: PATIENT_DISPLAY
+      },
+      encounter: {
+        reference: `Encounter/${hospitalEncounter.id}`,
+        display: "Hospital Emergency Department & Inpatient Care"
+      },
+      recordedDate: "2026-11-18T16:15:00Z"
+    });
+
+    const summary = {
+      status: "Created 4 linked FHIR R4 / US Core 6.1.0 resources",
+      patient: PATIENT_REF,
+      emsEncounterId: emsEncounter.id,
