@@ -1,67 +1,17 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
+  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>EMS Outcome Tracker | Provider Sign In</title>
-  <script src="https://cdn.jsdelivr.net/npm/fhirclient@3.0.1/bundle/fhir-client.js"></script>
-  <style>
-    body {
-      font-family: system-ui, sans-serif;
-      max-width: 650px;
-      margin: 4rem auto;
-      padding: 0 1.5rem;
-      line-height: 1.6;
-      color: #263445;
-      background: #f5f7fa;
-    }
-    main {
-      background: white;
-      padding: 2rem;
-      border-radius: 12px;
-      border: 1px solid #dce3ea;
-    }
-    h1 { color: #173b57; }
-    .status {
-      margin-top: 1.5rem;
-      padding: 1rem;
-      background: #eef4f8;
-      border-radius: 8px;
-    }
-    #error {
-      color: #a21c1c;
-      background: #fff1f1;
-      padding: 1rem;
-      overflow-wrap: anywhere;
-    }
-    button {
-      padding: .8rem 1.2rem;
-      background: #173b57;
-      color: white;
-      border: 0;
-      border-radius: 7px;
-      cursor: pointer;
-      font-size: 1rem;
-    }
-  </style>
+  <title>EMS Outcome Tracker — SMART Launch</title>
+  <script src="https://cdn.jsdelivr.net/npm/fhirclient/build/fhir-client.js"></script>
 </head>
 <body>
-  <main>
-    <h1>EMS Outcome Tracker</h1>
-    <p><strong>Provider sign in</strong></p>
-    <p>Sign in using your assigned EMS Practitioner identity.</p>
-    <p class="status" id="status" role="status">
-      Preparing SMART authentication…
-    </p>
-    <p id="error" role="alert" hidden></p>
-    <button id="retry" type="button" hidden>Retry sign in</button>
-  </main>
+  <p>Connecting to the SMART health record system...</p>
 
   <script>
-    "use strict";
-
     const FHIR_SERVER =
-      "https://launch.smarthealthit.org/v/r4/sim/WzIsIiIsIjQ5NjUyNzUsNDk2NTI3NCwiQVVUTyIsMCwwLDAsIiIsIiIsIiIsIiIsIiIsIiIsIiIsMCwyLCIiXQ/fhir";
+      "https://launch.smarthealthit.org/v/r4/sim/WzIsIiIsIjQ5NjUyNzUsNDk2NTI3NCw0OTY1MjczIiwiQVVUTyIsMCwwLDAsIiIsIiIsIiIsIiIsIiIsIiIsIiIsMCwyLCIiXQ/fhir";
 
     const CLIENT_ID = "my_web_app";
     const REDIRECT_URI = new URL("index.html", window.location.href).href;
@@ -70,65 +20,23 @@
       "openid",
       "fhirUser",
       "launch/patient",
-
-      "user/Patient.read",
-      "user/Patient.create",
-
-      "user/Encounter.read",
-      "user/Encounter.create",
-
-      "user/Condition.read",
-      "user/Condition.create",
-
-      "user/ClinicalImpression.read",
-      "user/ClinicalImpression.create",
-
-      "user/Provenance.read",
-      "user/Provenance.create",
-
-      "user/Practitioner.read",
-      "user/PractitionerRole.read",
-      "user/Organization.read"
+      "user/Patient.crs",
+      "user/Encounter.crs",
+      "user/Condition.crs",
+      "user/ClinicalImpression.crs",
+      "user/Provenance.crs",
+      "user/Practitioner.rs",
+      "user/PractitionerRole.rs",
+      "user/Organization.rs"
     ].join(" ");
 
-    function startAuthorization() {
-      const errorNode = document.getElementById("error");
-      const retry = document.getElementById("retry");
-
-      errorNode.hidden = true;
-      retry.hidden = true;
-
-      document.getElementById("status").textContent =
-        "Connecting to the EMS provider SMART sandbox…";
-
-      if (!window.FHIR || !FHIR.oauth2) {
-        errorNode.textContent = "The SMART client library did not load.";
-        errorNode.hidden = false;
-        retry.hidden = false;
-        return;
-      }
-
-      FHIR.oauth2.authorize({
-        clientId: CLIENT_ID,
-        scope: SCOPES,
-        redirectUri: REDIRECT_URI,
-        iss: FHIR_SERVER,
-        pkceMode: "required"
-      }).catch(error => {
-        console.error(error);
-        errorNode.textContent = error.message || String(error);
-        errorNode.hidden = false;
-        retry.hidden = false;
-        document.getElementById("status").textContent =
-          "Provider sign-in could not be started.";
-      });
-    }
-
-    document.getElementById("retry").addEventListener(
-      "click", startAuthorization
-    );
-
-    document.addEventListener("DOMContentLoaded", startAuthorization);
+    FHIR.oauth2.authorize({
+      clientId: CLIENT_ID,
+      scope: SCOPES,
+      redirectUri: REDIRECT_URI,
+      iss: FHIR_SERVER,
+      pkceMode: "required"
+    });
   </script>
 </body>
 </html>
