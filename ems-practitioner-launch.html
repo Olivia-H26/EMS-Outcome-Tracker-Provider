@@ -1,4 +1,3 @@
-
 <!doctype html>
 <html lang="en">
 <head>
@@ -46,7 +45,7 @@
   <main>
     <h1>EMS Outcome Tracker</h1>
     <h2>Administrative Setup</h2>
-    <p>This separate setup tool requests permission to create EMS test records.</p>
+    <p>Sign in to inspect and create synthetic EMS demonstration records.</p>
     <p id="status">Preparing SMART authorization...</p>
     <p id="error" role="alert"></p>
     <button id="retry" hidden onclick="startAuthorization()">Retry sign in</button>
@@ -66,24 +65,19 @@
     const SCOPES = [
       "openid",
       "fhirUser",
-      "user/Practitioner.read",
-      "user/Practitioner.write",
-      "user/PractitionerRole.read",
-      "user/PractitionerRole.write",
-      "user/Organization.read",
-      "user/Organization.write"
+      "user/Organization.crs",
+      "user/Practitioner.crs",
+      "user/PractitionerRole.crs"
     ].join(" ");
 
     function startAuthorization() {
       document.getElementById("error").textContent = "";
       document.getElementById("retry").hidden = true;
       document.getElementById("status").textContent =
-        "Connecting to the SMART FHIR R4 sandbox...";
+        "Connecting to SMART Health IT...";
 
       if (!window.FHIR || !FHIR.oauth2) {
-        document.getElementById("error").textContent =
-          "SMART client could not load. Reload the page and try again.";
-        document.getElementById("retry").hidden = false;
+        showError("The SMART library did not load. Please refresh.");
         return;
       }
 
@@ -94,13 +88,15 @@
         iss: FHIR_SERVER,
         pkceMode: "required"
       }).catch(error => {
-        console.error(error);
-        document.getElementById("status").textContent =
-          "Authorization could not be started.";
-        document.getElementById("error").textContent =
-          error && error.message ? error.message : String(error);
-        document.getElementById("retry").hidden = false;
+        showError(error.message || String(error));
       });
+    }
+
+    function showError(message) {
+      document.getElementById("status").textContent =
+        "Authorization could not be completed.";
+      document.getElementById("error").textContent = message;
+      document.getElementById("retry").hidden = false;
     }
 
     document.addEventListener("DOMContentLoaded", startAuthorization);
