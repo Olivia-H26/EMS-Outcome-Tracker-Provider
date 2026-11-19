@@ -70,9 +70,22 @@
       "openid",
       "fhirUser",
       "launch/patient",
+
       "user/Patient.read",
+      "user/Patient.write",
+
       "user/Encounter.read",
+      "user/Encounter.write",
+
       "user/Condition.read",
+      "user/Condition.write",
+
+      "user/ClinicalImpression.read",
+      "user/ClinicalImpression.write",
+
+      "user/Provenance.read",
+      "user/Provenance.write",
+
       "user/Practitioner.read",
       "user/PractitionerRole.read",
       "user/Organization.read"
@@ -81,8 +94,10 @@
     function startAuthorization() {
       const errorNode = document.getElementById("error");
       const retry = document.getElementById("retry");
+
       errorNode.hidden = true;
       retry.hidden = true;
+
       document.getElementById("status").textContent =
         "Connecting to the EMS provider SMART sandbox…";
 
