@@ -1,4 +1,3 @@
-```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -39,8 +38,15 @@ header {
   padding:1.4rem max(1rem,calc((100% - 1150px)/2));
 }
 
-header h1 { margin:0; font-size:1.7rem; }
-header p { margin:.25rem 0 0; color:#dce8f0; }
+header h1 {
+  margin:0;
+  font-size:1.7rem;
+}
+
+header p {
+  margin:.25rem 0 0;
+  color:#dce8f0;
+}
 
 main {
   max-width:1150px;
@@ -57,8 +63,18 @@ main {
   box-shadow:0 2px 8px rgba(20,45,65,.035);
 }
 
-h2 { color:var(--navy); font-size:1.25rem; margin:0 0 .8rem; }
-h3 { color:var(--navy); font-size:1.05rem; margin:.2rem 0 .7rem; }
+h2 {
+  color:var(--navy);
+  font-size:1.25rem;
+  margin:0 0 .8rem;
+}
+
+h3 {
+  color:var(--navy);
+  font-size:1.05rem;
+  margin:.2rem 0 .7rem;
+}
+
 .muted { color:var(--muted); }
 
 .status {
@@ -70,7 +86,10 @@ h3 { color:var(--navy); font-size:1.05rem; margin:.2rem 0 .7rem; }
   overflow-wrap:anywhere;
 }
 
-.status.error { background:#fff0f0; color:#a32b2b; }
+.status.error {
+  background:#fff0f0;
+  color:#a32b2b;
+}
 
 .search-row {
   display:flex;
@@ -99,10 +118,20 @@ button,.button-link {
   display:inline-block;
 }
 
-button:hover,.button-link:hover { background:var(--navy); }
-button:disabled { opacity:.6; cursor:wait; }
+button:hover,.button-link:hover {
+  background:var(--navy);
+}
 
-.result-list { display:grid; gap:.7rem; margin-top:.8rem; }
+button:disabled {
+  opacity:.6;
+  cursor:wait;
+}
+
+.result-list {
+  display:grid;
+  gap:.7rem;
+  margin-top:.8rem;
+}
 
 .patient-result {
   width:100%;
@@ -113,8 +142,14 @@ button:disabled { opacity:.6; cursor:wait; }
 }
 
 .patient-result:hover { background:#edf3f7; }
+
 .patient-result strong { color:var(--navy); }
-.patient-result span { display:block; font-weight:400; margin-top:.2rem; }
+
+.patient-result span {
+  display:block;
+  font-weight:400;
+  margin-top:.2rem;
+}
 
 .grid {
   display:grid;
@@ -122,37 +157,18 @@ button:disabled { opacity:.6; cursor:wait; }
   gap:.8rem 1.2rem;
 }
 
-.field { min-width:0; overflow-wrap:anywhere; }
-.field strong { display:block; color:#506477; font-size:.84rem; }
-.field span { display:block; }
-
-.personnel-grid {
-  display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
-  gap:.8rem;
-}
-
-.personnel-card {
-  background:#f7fafc;
-  border:1px solid var(--line);
-  border-left:5px solid var(--blue);
-  border-radius:9px;
-  padding:1rem;
+.field {
+  min-width:0;
   overflow-wrap:anywhere;
 }
 
-.personnel-card h3 { margin:0 0 .5rem; }
-.personnel-card p { margin:.3rem 0; }
-.personnel-role {
-  display:inline-block;
-  margin:.4rem .3rem .2rem 0;
-  padding:.25rem .65rem;
-  border-radius:20px;
-  background:var(--ems-bg);
-  color:var(--navy);
-  font-size:.85rem;
-  font-weight:700;
+.field strong {
+  display:block;
+  color:#506477;
+  font-size:.84rem;
 }
+
+.field span { display:block; }
 
 .pair-card {
   border:1px solid var(--line);
@@ -170,9 +186,21 @@ button:disabled { opacity:.6; cursor:wait; }
   font-weight:750;
 }
 
-.compare-grid { display:grid; grid-template-columns:1fr 1fr; }
-.compare-column { padding:1.2rem; min-width:0; }
-.ems-column { background:var(--ems-bg); border-right:1px solid var(--line); }
+.compare-grid {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+}
+
+.compare-column {
+  padding:1.2rem;
+  min-width:0;
+}
+
+.ems-column {
+  background:var(--ems-bg);
+  border-right:1px solid var(--line);
+}
+
 .hospital-column { background:var(--hospital-bg); }
 
 .column-label {
@@ -185,8 +213,18 @@ button:disabled { opacity:.6; cursor:wait; }
 .ems-column .column-label { color:#245d83; }
 .hospital-column .column-label { color:#27633d; }
 
-.diagnosis-label { color:#53677a; font-size:.78rem; font-weight:700; }
-.diagnosis { font-size:1.45rem; font-weight:750; margin:.4rem 0; overflow-wrap:anywhere; }
+.diagnosis-label {
+  color:#53677a;
+  font-size:.78rem;
+  font-weight:700;
+}
+
+.diagnosis {
+  font-size:1.45rem;
+  font-weight:750;
+  margin:.4rem 0;
+  overflow-wrap:anywhere;
+}
 
 .verification {
   display:inline-block;
@@ -208,7 +246,11 @@ button:disabled { opacity:.6; cursor:wait; }
   overflow-wrap:anywhere;
 }
 
-.detail strong { display:block; color:#53677a; font-size:.8rem; }
+.detail strong {
+  display:block;
+  color:#53677a;
+  font-size:.8rem;
+}
 
 .link-note {
   padding:.85rem 1rem;
@@ -248,11 +290,27 @@ button:disabled { opacity:.6; cursor:wait; }
   background:white;
 }
 
-.history-card p { margin:.25rem 0; overflow-wrap:anywhere; }
-.record-label { font-weight:650; color:#506477; }
+.history-card p {
+  margin:.25rem 0;
+  overflow-wrap:anywhere;
+}
 
-details { margin-top:.5rem; border-top:1px solid var(--line); padding-top:1rem; }
-summary { color:var(--navy); font-weight:650; cursor:pointer; }
+.record-label {
+  font-weight:650;
+  color:#506477;
+}
+
+details {
+  margin-top:.5rem;
+  border-top:1px solid var(--line);
+  padding-top:1rem;
+}
+
+summary {
+  color:var(--navy);
+  font-weight:650;
+  cursor:pointer;
+}
 
 footer {
   text-align:center;
@@ -265,9 +323,16 @@ footer {
 
 @media(max-width:650px) {
   header h1 { font-size:1.4rem; }
+
   .compare-grid { grid-template-columns:1fr; }
-  .ems-column { border-right:0; border-bottom:2px solid var(--line); }
+
+  .ems-column {
+    border-right:0;
+    border-bottom:2px solid var(--line);
+  }
+
   .diagnosis { font-size:1.2rem; }
+
   .panel { padding:1rem; }
 }
 </style>
@@ -282,58 +347,81 @@ footer {
 
 <main>
 
-<section id="login-panel" class="panel" hidden>
-  <h2>EMS Personnel Sign-In</h2>
-  <p id="login-message" class="muted">Sign in through the SMART authorization system.</p>
-  <a class="button-link" href="./launch.html">Sign in</a>
-</section>
-
-<section id="dashboard" hidden>
-
-  <div id="connection-status" class="status" role="status">Connecting...</div>
-
-  <section class="panel">
-    <h2>EMS Personnel Directory</h2>
-    <p class="muted">Registered synthetic EMS practitioners. Only the three configured EMS demonstration identities are displayed here.</p>
-    <div id="ems-personnel-status" class="status" role="status">Loading EMS personnel...</div>
-    <div id="ems-personnel-list" class="personnel-grid"></div>
+  <section id="login-panel" class="panel" hidden>
+    <h2>EMS Personnel Sign-In</h2>
+    <p id="login-message" class="muted">
+      Sign in through the SMART authorization system.
+    </p>
+    <a class="button-link" href="./launch.html">
+      Sign in
+    </a>
   </section>
 
-  <section class="panel">
-    <h2>Find a Patient</h2>
-    <form id="patient-search-form">
-      <div class="search-row">
-        <input id="patient-search" type="search" placeholder="Enter patient's first or last name" autocomplete="off" required>
-        <button id="search-button" type="submit">Search Patients</button>
-        <button id="browse-button" type="button">Browse Test Patients</button>
-      </div>
-    </form>
-    <p id="search-message" class="muted" role="status">Search for a patient or browse available sandbox patients.</p>
-    <div id="patient-results" class="result-list"></div>
+  <section id="dashboard" hidden>
+
+    <div id="connection-status" class="status" role="status">
+      Connecting...
+    </div>
+
+    <section class="panel">
+      <h2>Find a Patient</h2>
+
+      <form id="patient-search-form">
+        <div class="search-row">
+
+          <input
+            id="patient-search"
+            type="search"
+            placeholder="Enter patient's first or last name"
+            autocomplete="off"
+            required
+          >
+
+          <button id="search-button" type="submit">
+            Search Patients
+          </button>
+
+          <button id="browse-button" type="button">
+            Browse Test Patients
+          </button>
+
+        </div>
+      </form>
+
+      <p id="search-message" class="muted" role="status">
+        Search for a patient or browse available sandbox patients.
+      </p>
+
+      <div id="patient-results" class="result-list"></div>
+    </section>
+
+    <section id="selected-patient-panel" class="panel" hidden>
+      <h2>Selected Patient</h2>
+      <div id="patient-summary" class="grid"></div>
+    </section>
+
+    <section id="comparison-panel" class="panel" hidden>
+      <h2>EMS-to-Hospital Comparison</h2>
+      <p class="muted">
+        Compare the EMS assessment with the hospital diagnosis and outcome.
+      </p>
+      <div id="comparison-list"></div>
+    </section>
+
+    <section id="history-panel" class="panel" hidden>
+      <details>
+        <summary>View Other Patient Encounters and Conditions</summary>
+        <div id="history-list"></div>
+      </details>
+    </section>
+
   </section>
 
-  <section id="selected-patient-panel" class="panel" hidden>
-    <h2>Selected Patient</h2>
-    <div id="patient-summary" class="grid"></div>
-  </section>
-
-  <section id="comparison-panel" class="panel" hidden>
-    <h2>EMS-to-Hospital Comparison</h2>
-    <p class="muted">Compare the EMS assessment with the hospital diagnosis and outcome.</p>
-    <div id="comparison-list"></div>
-  </section>
-
-  <section id="history-panel" class="panel" hidden>
-    <details>
-      <summary>View Other Patient Encounters and Conditions</summary>
-      <div id="history-list"></div>
-    </details>
-  </section>
-
-</section>
 </main>
 
-<footer>EMS Outcome Tracker · Read-only demonstration · Synthetic test data</footer>
+<footer>
+  EMS Outcome Tracker · Read-only demonstration · Synthetic test data
+</footer>
 
 <script>
 "use strict";
@@ -342,24 +430,30 @@ footer {
 
   const loginPanel = document.getElementById("login-panel");
   const dashboard = document.getElementById("dashboard");
-  const loginMessage = document.getElementById("login-message");
-  const connectionStatus = document.getElementById("connection-status");
 
-  const searchForm = document.getElementById("patient-search-form");
-  const searchInput = document.getElementById("patient-search");
-  const searchButton = document.getElementById("search-button");
-  const browseButton = document.getElementById("browse-button");
-  const searchMessage = document.getElementById("search-message");
-  const patientResults = document.getElementById("patient-results");
+  const loginMessage =
+    document.getElementById("login-message");
 
-  const EMS_IDENTIFIER_SYSTEM =
-    "https://olivia-h26.github.io/EMS-Outcome-Tracker-Provider/identifiers/ems-demo";
+  const connectionStatus =
+    document.getElementById("connection-status");
 
-  const EMS_PRACTITIONERS = [
-    { identifier:"EMS-DEMO-BASIC-001", expectedName:"Demo Basic EMT" },
-    { identifier:"EMS-DEMO-INTERMEDIATE-001", expectedName:"Demo Intermediate EMT" },
-    { identifier:"EMS-DEMO-PARAMEDIC-001", expectedName:"Demo Paramedic EMT" }
-  ];
+  const searchForm =
+    document.getElementById("patient-search-form");
+
+  const searchInput =
+    document.getElementById("patient-search");
+
+  const searchButton =
+    document.getElementById("search-button");
+
+  const browseButton =
+    document.getElementById("browse-button");
+
+  const searchMessage =
+    document.getElementById("search-message");
+
+  const patientResults =
+    document.getElementById("patient-results");
 
   let fhirClient = null;
 
@@ -379,26 +473,42 @@ footer {
 
     if (Array.isArray(response)) {
       return response.reduce(
-        (all, page) => all.concat(getBundleEntries(page)), []
+        (all, page) => all.concat(getBundleEntries(page)),
+        []
       );
     }
 
-    if (response.resourceType === "Bundle" && Array.isArray(response.entry)) {
-      return response.entry.map(entry => entry.resource).filter(Boolean);
+    if (
+      response.resourceType === "Bundle" &&
+      Array.isArray(response.entry)
+    ) {
+      return response.entry
+        .map(entry => entry.resource)
+        .filter(Boolean);
     }
 
     return [];
   }
 
   function getName(patient) {
-    const names = Array.isArray(patient.name) ? patient.name : [];
-    const name = names.find(item => item.use === "official") || names[0];
+    const names = Array.isArray(patient.name)
+      ? patient.name
+      : [];
+
+    const name =
+      names.find(item => item.use === "official") ||
+      names[0];
 
     if (!name) return "Name not recorded";
     if (name.text) return name.text;
 
-    const given = Array.isArray(name.given) ? name.given.join(" ") : "";
-    return (given + " " + (name.family || "")).trim() || "Name not recorded";
+    const given = Array.isArray(name.given)
+      ? name.given.join(" ")
+      : "";
+
+    return (
+      given + " " + (name.family || "")
+    ).trim() || "Name not recorded";
   }
 
   function formatDate(value) {
@@ -406,35 +516,51 @@ footer {
 
     const raw = String(value);
     const dateOnly = /^\d{4}-\d{2}-\d{2}$/.test(raw);
-    const date = new Date(dateOnly ? raw + "T12:00:00" : raw);
+
+    const date = new Date(
+      dateOnly ? raw + "T12:00:00" : raw
+    );
 
     if (Number.isNaN(date.getTime())) return raw;
-    return dateOnly ? date.toLocaleDateString() : date.toLocaleString();
+
+    return dateOnly
+      ? date.toLocaleDateString()
+      : date.toLocaleString();
   }
 
   function conceptText(concept) {
     if (!concept) return "Not recorded";
 
     if (Array.isArray(concept)) {
-      return concept.map(conceptText)
+      return concept
+        .map(conceptText)
         .filter(value => value !== "Not recorded")
         .join("; ") || "Not recorded";
     }
 
     if (concept.text) return concept.text;
 
-    const coding = Array.isArray(concept.coding) ? concept.coding : [];
-    return coding.map(item => item.display || item.code)
-      .filter(Boolean).join("; ") || "Not recorded";
+    const coding = Array.isArray(concept.coding)
+      ? concept.coding
+      : [];
+
+    return coding
+      .map(item => item.display || item.code)
+      .filter(Boolean)
+      .join("; ") || "Not recorded";
   }
 
   function verificationStatus(condition) {
-    if (!condition || !condition.verificationStatus) return "Not recorded";
+    if (!condition || !condition.verificationStatus) {
+      return "Not recorded";
+    }
 
     const value = condition.verificationStatus;
 
     if (Array.isArray(value.coding) && value.coding.length) {
-      return value.coding.map(item => item.display || item.code).join(", ");
+      return value.coding
+        .map(item => item.display || item.code)
+        .join(", ");
     }
 
     return value.text || "Not recorded";
@@ -442,7 +568,10 @@ footer {
 
   function referenceText(reference) {
     if (!reference) return "Not recorded";
-    const items = Array.isArray(reference) ? reference : [reference];
+
+    const items = Array.isArray(reference)
+      ? reference
+      : [reference];
 
     return items.map(item =>
       item.display || item.reference || "Reference present"
@@ -456,20 +585,31 @@ footer {
       ? reference
       : reference.reference || "";
 
-    const match = raw.match(new RegExp("(?:^|/)" + type + "/([^/?#]+)"));
+    const match = raw.match(
+      new RegExp("(?:^|/)" + type + "/([^/?#]+)")
+    );
+
     return match ? match[1] : "";
   }
 
   function formatEncounterClass(encounter) {
-    if (!encounter || !encounter.class) return "Not recorded";
-    return encounter.class.display || encounter.class.code || "Not recorded";
+    if (!encounter || !encounter.class) {
+      return "Not recorded";
+    }
+
+    return encounter.class.display ||
+      encounter.class.code ||
+      "Not recorded";
   }
 
   function formatDisposition(encounter) {
-    const disposition = encounter.hospitalization &&
+    const disposition =
+      encounter.hospitalization &&
       encounter.hospitalization.dischargeDisposition;
 
-    return disposition ? conceptText(disposition) : "Not recorded";
+    if (!disposition) return "Not recorded";
+
+    return conceptText(disposition);
   }
 
   function appendField(container, label, value) {
@@ -492,10 +632,12 @@ footer {
 
     const heading = document.createElement("h3");
     heading.textContent = title;
+
     article.appendChild(heading);
 
     fields.forEach(([label, value]) => {
       const line = document.createElement("p");
+
       const key = document.createElement("span");
       key.className = "record-label";
       key.textContent = label + ": ";
@@ -510,151 +652,19 @@ footer {
     return article;
   }
 
-  // EMS directory: search for the three exact synthetic identifiers.
-  function getPractitionerByIdentifier(resources, identifier) {
-    return resources.find(practitioner =>
-      Array.isArray(practitioner.identifier) &&
-      practitioner.identifier.some(item =>
-        item.system === EMS_IDENTIFIER_SYSTEM &&
-        item.value === identifier
-      )
-    ) || null;
-  }
-
-  function getPractitionerRoleText(role) {
-    const specialty = conceptText(role.specialty);
-    const code = conceptText(role.code);
-
-    if (specialty !== "Not recorded" && code !== "Not recorded" && specialty !== code) {
-      return specialty + " · " + code;
-    }
-
-    if (specialty !== "Not recorded") return specialty;
-    if (code !== "Not recorded") return code;
-
-    return "Role details not recorded";
-  }
-
-  async function loadEMSPersonnel() {
-    const status = document.getElementById("ems-personnel-status");
-    const list = document.getElementById("ems-personnel-list");
-
-    list.replaceChildren();
-    showStatus(status, "Searching for the three registered EMS practitioners...", false);
-
-    let foundCount = 0;
-    let errors = [];
-
-    for (const expected of EMS_PRACTITIONERS) {
-      const card = document.createElement("article");
-      card.className = "personnel-card";
-
-      try {
-        const query =
-          "Practitioner?identifier=" +
-          encodeURIComponent(EMS_IDENTIFIER_SYSTEM + "|" + expected.identifier) +
-          "&_count=10";
-
-        const response = await fhirClient.request(query);
-        const resources = getBundleEntries(response);
-
-        const practitioner = getPractitionerByIdentifier(
-          resources,
-          expected.identifier
-        );
-
-        const heading = document.createElement("h3");
-        heading.textContent = practitioner
-          ? getName(practitioner)
-          : expected.expectedName;
-        card.appendChild(heading);
-
-        if (!practitioner) {
-          const missing = document.createElement("p");
-          missing.textContent =
-            "Practitioner not returned. Check that setup and dashboard use the same FHIR sandbox and that Practitioner read access is authorized.";
-          card.appendChild(missing);
-          list.appendChild(card);
-          continue;
-        }
-
-        foundCount++;
-
-        const idLine = document.createElement("p");
-        idLine.textContent = "EMS ID: " + expected.identifier;
-        card.appendChild(idLine);
-
-        const fhirLine = document.createElement("p");
-        fhirLine.textContent = "FHIR Practitioner ID: " + practitioner.id;
-        card.appendChild(fhirLine);
-
-        const roleLabel = document.createElement("p");
-        roleLabel.textContent = "EMS Role:";
-        card.appendChild(roleLabel);
-
-        try {
-          const roleQuery =
-            "PractitionerRole?practitioner=" +
-            encodeURIComponent("Practitioner/" + practitioner.id) +
-            "&_count=50";
-
-          const roleResponse = await fhirClient.request(roleQuery);
-          const roles = getBundleEntries(roleResponse);
-
-          if (!roles.length) {
-            const badge = document.createElement("span");
-            badge.className = "personnel-role";
-            badge.textContent = "No PractitionerRole found";
-            card.appendChild(badge);
-          } else {
-            roles.forEach(role => {
-              const badge = document.createElement("span");
-              badge.className = "personnel-role";
-              badge.textContent = getPractitionerRoleText(role);
-              card.appendChild(badge);
-            });
-          }
-        } catch (error) {
-          const roleError = document.createElement("p");
-          roleError.textContent =
-            "Could not load role: " + (error.message || String(error));
-          card.appendChild(roleError);
-          errors.push("PractitionerRole lookup failed");
-        }
-
-      } catch (error) {
-        const heading = document.createElement("h3");
-        heading.textContent = expected.expectedName;
-        card.appendChild(heading);
-
-        const message = document.createElement("p");
-        message.textContent =
-          "Lookup failed: " + (error.message || String(error));
-        card.appendChild(message);
-
-        errors.push(error.message || String(error));
-      }
-
-      list.appendChild(card);
-    }
-
-    const summary = foundCount + " of 3 EMS practitioner records found.";
-
-    showStatus(
-      status,
-      errors.length ? summary + " Some lookups returned errors; see the cards." : summary,
-      foundCount !== 3 || errors.length > 0
-    );
-  }
-
   function renderPatient(patient) {
     const summary = document.getElementById("patient-summary");
+
     summary.replaceChildren();
 
     appendField(summary, "Patient Name", getName(patient));
     appendField(summary, "FHIR Patient ID", patient.id);
     appendField(summary, "Date of Birth", formatDate(patient.birthDate));
-    appendField(summary, "Administrative Gender", patient.gender);
+    appendField(
+      summary,
+      "Administrative Gender",
+      patient.gender
+    );
 
     document.getElementById("selected-patient-panel").hidden = false;
   }
@@ -670,8 +680,10 @@ footer {
 
     for (const reference of references) {
       const id = resourceId(reference, "Condition");
+
       if (id) {
         const condition = conditions.find(item => item.id === id);
+
         if (condition) return condition;
       }
     }
@@ -682,8 +694,12 @@ footer {
   function getEMSEncounter(emsCondition, encounters) {
     if (!emsCondition) return null;
 
-    const encounterId = resourceId(emsCondition.encounter, "Encounter");
-    return encounters.find(item => item.id === encounterId) || null;
+    const encounterId =
+      resourceId(emsCondition.encounter, "Encounter");
+
+    return encounters.find(item =>
+      item.id === encounterId
+    ) || null;
   }
 
   function getPairs(encounters, conditions) {
@@ -692,14 +708,22 @@ footer {
     const usedConditionIds = new Set();
 
     encounters.forEach(hospitalEncounter => {
-      const emsCondition = getEMSCondition(hospitalEncounter, conditions);
+
+      const emsCondition =
+        getEMSCondition(hospitalEncounter, conditions);
+
       if (!emsCondition) return;
 
-      const emsEncounter = getEMSEncounter(emsCondition, encounters);
+      const emsEncounter =
+        getEMSEncounter(emsCondition, encounters);
+
       if (!emsEncounter) return;
 
       const hospitalCondition =
-        getConditionForEncounter(conditions, hospitalEncounter.id);
+        getConditionForEncounter(
+          conditions,
+          hospitalEncounter.id
+        );
 
       pairs.push({
         emsEncounter,
@@ -710,12 +734,19 @@ footer {
 
       usedEncounterIds.add(emsEncounter.id);
       usedEncounterIds.add(hospitalEncounter.id);
+
       usedConditionIds.add(emsCondition.id);
 
-      if (hospitalCondition) usedConditionIds.add(hospitalCondition.id);
+      if (hospitalCondition) {
+        usedConditionIds.add(hospitalCondition.id);
+      }
     });
 
-    return { pairs, usedEncounterIds, usedConditionIds };
+    return {
+      pairs,
+      usedEncounterIds,
+      usedConditionIds
+    };
   }
 
   function addDetail(container, label, value) {
@@ -732,57 +763,98 @@ footer {
     container.appendChild(node);
   }
 
-  function makeComparisonColumn(kind, title, encounter, condition) {
+  function makeComparisonColumn(
+    kind,
+    title,
+    encounter,
+    condition
+  ) {
     const column = document.createElement("div");
-    column.className = "compare-column " +
+
+    column.className =
+      "compare-column " +
       (kind === "EMS" ? "ems-column" : "hospital-column");
 
     const heading = document.createElement("div");
     heading.className = "column-label";
     heading.textContent = title;
+
     column.appendChild(heading);
 
     const diagnosisLabel = document.createElement("div");
     diagnosisLabel.className = "diagnosis-label";
     diagnosisLabel.textContent = "DIAGNOSIS";
+
     column.appendChild(diagnosisLabel);
 
     const diagnosis = document.createElement("div");
     diagnosis.className = "diagnosis";
+
     diagnosis.textContent = condition
       ? conceptText(condition.code)
       : "No linked diagnosis found";
+
     column.appendChild(diagnosis);
 
     if (condition) {
       const badge = document.createElement("span");
-      const currentStatus = verificationStatus(condition).toLowerCase();
 
-      badge.className = "verification " +
+      const currentStatus =
+        verificationStatus(condition).toLowerCase();
+
+      badge.className =
+        "verification " +
         (currentStatus.includes("provisional")
           ? "provisional"
           : currentStatus.includes("confirmed")
             ? "confirmed"
             : "");
 
-      badge.textContent = "Verification: " + verificationStatus(condition);
+      badge.textContent =
+        "Verification: " + verificationStatus(condition);
+
       column.appendChild(badge);
     }
 
     addDetail(column, "Encounter ID", encounter.id);
     addDetail(column, "Encounter Status", encounter.status);
     addDetail(column, "Encounter Class", formatEncounterClass(encounter));
-    addDetail(column, "Start", formatDate(encounter.period && encounter.period.start));
-    addDetail(column, "End", formatDate(encounter.period && encounter.period.end));
-    addDetail(column, "Service Provider", referenceText(encounter.serviceProvider));
+
+    addDetail(
+      column,
+      "Start",
+      formatDate(encounter.period && encounter.period.start)
+    );
+
+    addDetail(
+      column,
+      "End",
+      formatDate(encounter.period && encounter.period.end)
+    );
+
+    addDetail(
+      column,
+      "Service Provider",
+      referenceText(encounter.serviceProvider)
+    );
 
     if (condition) {
       addDetail(column, "Condition ID", condition.id);
-      addDetail(column, "Recorded Date", formatDate(condition.recordedDate));
+
+      addDetail(
+        column,
+        "Recorded Date",
+        formatDate(condition.recordedDate)
+      );
     }
 
     if (kind === "HOSPITAL") {
-      addDetail(column, "Discharge Disposition", formatDisposition(encounter));
+      addDetail(
+        column,
+        "Discharge Disposition",
+        formatDisposition(encounter)
+      );
+
       addDetail(
         column,
         "Discharge Date and Time",
@@ -797,7 +869,9 @@ footer {
       ) {
         const outcome = document.createElement("div");
         outcome.className = "outcome";
-        outcome.textContent = "Hospital Outcome: " + formatDisposition(encounter);
+        outcome.textContent =
+          "Hospital Outcome: " + formatDisposition(encounter);
+
         column.appendChild(outcome);
       }
     }
@@ -822,8 +896,12 @@ footer {
     if (!result.pairs.length) {
       const empty = document.createElement("div");
       empty.className = "empty-state";
+
       empty.textContent =
-        "No linked EMS-to-hospital encounters were found. The hospital Encounter must reference the EMS provisional Condition in reasonReference.";
+        "No linked EMS-to-hospital encounters were found. " +
+        "The hospital Encounter must reference the EMS provisional " +
+        "Condition in reasonReference.";
+
       list.appendChild(empty);
     } else {
       result.pairs.forEach((pair, index) => {
@@ -833,25 +911,35 @@ footer {
         const title = document.createElement("div");
         title.className = "pair-title";
         title.textContent = "EMS-to-Hospital Handoff " + (index + 1);
+
         card.appendChild(title);
 
         const grid = document.createElement("div");
         grid.className = "compare-grid";
 
-        grid.appendChild(makeComparisonColumn(
-          "EMS", "EMS PREHOSPITAL REPORT",
-          pair.emsEncounter, pair.emsCondition
-        ));
+        grid.appendChild(
+          makeComparisonColumn(
+            "EMS",
+            "EMS PREHOSPITAL REPORT",
+            pair.emsEncounter,
+            pair.emsCondition
+          )
+        );
 
-        grid.appendChild(makeComparisonColumn(
-          "HOSPITAL", "HOSPITAL OUTCOME",
-          pair.hospitalEncounter, pair.hospitalCondition
-        ));
+        grid.appendChild(
+          makeComparisonColumn(
+            "HOSPITAL",
+            "HOSPITAL OUTCOME",
+            pair.hospitalEncounter,
+            pair.hospitalCondition
+          )
+        );
 
         card.appendChild(grid);
 
         const note = document.createElement("div");
         note.className = "link-note";
+
         note.textContent =
           "Linked: Hospital encounter reason references EMS Condition/" +
           pair.emsCondition.id;
@@ -870,22 +958,35 @@ footer {
     );
 
     if (!otherEncounters.length && !otherConditions.length) {
-      historyList.textContent = "No additional encounter or condition records.";
+      historyList.textContent =
+        "No additional encounter or condition records.";
     } else {
+
       if (otherEncounters.length) {
         const heading = document.createElement("h3");
         heading.textContent = "Other Encounters";
         historyList.appendChild(heading);
 
         otherEncounters.forEach(item => {
-          historyList.appendChild(makeHistoryCard("Encounter", [
-            ["Encounter ID", item.id],
-            ["Status", item.status],
-            ["Class", formatEncounterClass(item)],
-            ["Start", formatDate(item.period && item.period.start)],
-            ["End", formatDate(item.period && item.period.end)],
-            ["Reason Code", conceptText(item.reasonCode)]
-          ]));
+          historyList.appendChild(
+            makeHistoryCard(
+              "Encounter",
+              [
+                ["Encounter ID", item.id],
+                ["Status", item.status],
+                ["Class", formatEncounterClass(item)],
+                [
+                  "Start",
+                  formatDate(item.period && item.period.start)
+                ],
+                [
+                  "End",
+                  formatDate(item.period && item.period.end)
+                ],
+                ["Reason Code", conceptText(item.reasonCode)]
+              ]
+            )
+          );
         });
       }
 
@@ -895,12 +996,20 @@ footer {
         historyList.appendChild(heading);
 
         otherConditions.forEach(item => {
-          historyList.appendChild(makeHistoryCard(conceptText(item.code), [
-            ["Condition ID", item.id],
-            ["Clinical Status", conceptText(item.clinicalStatus)],
-            ["Verification", verificationStatus(item)],
-            ["Encounter Reference", referenceText(item.encounter)]
-          ]));
+          historyList.appendChild(
+            makeHistoryCard(
+              conceptText(item.code),
+              [
+                ["Condition ID", item.id],
+                ["Clinical Status", conceptText(item.clinicalStatus)],
+                ["Verification", verificationStatus(item)],
+                [
+                  "Encounter Reference",
+                  referenceText(item.encounter)
+                ]
+              ]
+            )
+          );
         });
       }
     }
@@ -911,6 +1020,7 @@ footer {
 
     document.getElementById("comparison-panel").hidden = false;
     document.getElementById("history-panel").hidden = true;
+
     document.getElementById("comparison-list").textContent =
       "Loading EMS and hospital records...";
 
@@ -923,12 +1033,21 @@ footer {
     const patientId = encodeURIComponent(patient.id);
 
     const results = await Promise.allSettled([
-      fhirClient.request("Encounter?patient=" + patientId + "&_count=100"),
-      fhirClient.request("Condition?patient=" + patientId + "&_count=100")
+      fhirClient.request(
+        "Encounter?patient=" + patientId + "&_count=100"
+      ),
+      fhirClient.request(
+        "Condition?patient=" + patientId + "&_count=100"
+      )
     ]);
 
-    if (results[0].status !== "fulfilled") throw results[0].reason;
-    if (results[1].status !== "fulfilled") throw results[1].reason;
+    if (results[0].status !== "fulfilled") {
+      throw results[0].reason;
+    }
+
+    if (results[1].status !== "fulfilled") {
+      throw results[1].reason;
+    }
 
     const encounters = getBundleEntries(results[0].value);
     const conditions = getBundleEntries(results[1].value);
@@ -953,7 +1072,8 @@ footer {
 
     showStatus(
       searchMessage,
-      "Found " + patients.length + " patient(s). Select one to view the comparison.",
+      "Found " + patients.length +
+      " patient(s). Select one to view the comparison.",
       false
     );
 
@@ -976,7 +1096,8 @@ footer {
         loadPatientRecords(patient).catch(error => {
           showStatus(
             connectionStatus,
-            "Could not load patient records: " + (error.message || String(error)),
+            "Could not load patient records: " +
+            (error.message || String(error)),
             true
           );
         });
@@ -988,7 +1109,9 @@ footer {
 
   async function searchPatients(text) {
     patientResults.replaceChildren();
+
     showStatus(searchMessage, "Searching patients...", false);
+
     searchButton.disabled = true;
     browseButton.disabled = true;
 
@@ -996,13 +1119,17 @@ footer {
       const result = await fhirClient.request(
         "Patient?name=" + encodeURIComponent(text) + "&_count=25"
       );
+
       displayPatients(getBundleEntries(result));
+
     } catch (error) {
       showStatus(
         searchMessage,
-        "Patient search failed: " + (error.message || String(error)),
+        "Patient search failed: " +
+        (error.message || String(error)),
         true
       );
+
     } finally {
       searchButton.disabled = false;
       browseButton.disabled = false;
@@ -1011,19 +1138,25 @@ footer {
 
   async function browsePatients() {
     patientResults.replaceChildren();
+
     showStatus(searchMessage, "Loading sandbox patients...", false);
+
     searchButton.disabled = true;
     browseButton.disabled = true;
 
     try {
       const result = await fhirClient.request("Patient?_count=25");
+
       displayPatients(getBundleEntries(result));
+
     } catch (error) {
       showStatus(
         searchMessage,
-        "Could not browse patients: " + (error.message || String(error)),
+        "Could not browse patients: " +
+        (error.message || String(error)),
         true
       );
+
     } finally {
       searchButton.disabled = false;
       browseButton.disabled = false;
@@ -1032,14 +1165,19 @@ footer {
 
   searchForm.addEventListener("submit", event => {
     event.preventDefault();
+
     const text = searchInput.value.trim();
+
     if (text) searchPatients(text);
   });
 
   browseButton.addEventListener("click", browsePatients);
 
+  // Existing SMART standalone authorization is preserved.
   if (!window.FHIR || !FHIR.oauth2) {
-    showLogin("The SMART client library did not load. Check your internet connection and reload.");
+    showLogin(
+      "The SMART client library did not load. Check your internet connection and reload."
+    );
     return;
   }
 
@@ -1054,12 +1192,11 @@ footer {
         "SMART connected. Search or browse for a patient.",
         false
       );
-
-      loadEMSPersonnel();
     })
-    .catch(error => {
-      console.error("SMART session error:", error);
-      showLogin("You are not signed in. Use the sign-in link to connect to the SMART sandbox.");
+    .catch(() => {
+      showLogin(
+        "You are not signed in. Use the sign-in link to connect to the SMART sandbox."
+      );
     });
 
 })();
@@ -1067,4 +1204,3 @@ footer {
 
 </body>
 </html>
-```
