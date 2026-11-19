@@ -45,7 +45,7 @@
   <main>
     <h1>EMS Outcome Tracker</h1>
     <h2>Administrative Setup</h2>
-    <p>Sign in to inspect and create synthetic EMS demonstration records.</p>
+    <p>Sign in to inspect and repair synthetic EMS demonstration records.</p>
     <p id="status">Preparing SMART authorization...</p>
     <p id="error" role="alert"></p>
     <button id="retry" hidden onclick="startAuthorization()">Retry sign in</button>
@@ -65,9 +65,9 @@
     const SCOPES = [
       "openid",
       "fhirUser",
-      "user/Organization.crs",
-      "user/Practitioner.crs",
-      "user/PractitionerRole.crs"
+      "user/Organization.crus",
+      "user/Practitioner.crus",
+      "user/PractitionerRole.crus"
     ].join(" ");
 
     function startAuthorization() {
