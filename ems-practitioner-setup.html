@@ -1,482 +1,738 @@
-
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>EMS Practitioner Setup - Read Only Audit</title>
-<script src="https://cdn.jsdelivr.net/npm/fhirclient@3.0.1/bundle/fhir-client.js"></script>
-<style>
-body {
-  font-family: system-ui, sans-serif;
-  max-width: 850px;
-  margin: 30px auto;
-  padding: 20px;
-  background: #f3f6f9;
-  color: #243447;
-}
-main {
-  background: white;
-  padding: 25px;
-  border: 1px solid #d9e2ea;
-  border-radius: 12px;
-}
-h1,h2,h3 { color: #173b57; }
-button {
-  display: block;
-  margin: 12px 0;
-  padding: 12px 18px;
-  border: 0;
-  border-radius: 7px;
-  background: #235d82;
-  color: white;
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-}
-button:disabled { opacity: .5; cursor: wait; }
-.status, .warning {
-  padding: 12px;
-  border-radius: 7px;
-  overflow-wrap: anywhere;
-}
-.status { background: #edf3f7; }
-.warning { background: #fff3e8; }
-pre {
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  background: #edf3f7;
-  padding: 15px;
-  border-radius: 7px;
-}
-</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>EMS Outcome Tracker | Practitioner Repair</title>
+  <script src="https://cdn.jsdelivr.net/npm/fhirclient@3.0.1/bundle/fhir-client.js"></script>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      max-width: 850px;
+      margin: 2rem auto;
+      padding: 1.25rem;
+      line-height: 1.6;
+      color: #263445;
+      background: #f5f7fa;
+    }
+    main {
+      background: white;
+      padding: 1.5rem;
+      border-radius: 12px;
+      border: 1px solid #dce3ea;
+    }
+    h1 { color: #173b57; }
+    .panel {
+      background: #eef4f8;
+      padding: 1rem;
+      border-radius: 8px;
+      margin: 1rem 0;
+    }
+    button {
+      padding: .85rem 1.2rem;
+      margin: .4rem .4rem .4rem 0;
+      background: #173b57;
+      color: white;
+      border: 0;
+      border-radius: 7px;
+      cursor: pointer;
+      font-size: 1rem;
+    }
+    button:disabled {
+      opacity: .5;
+      cursor: not-allowed;
+    }
+    #apply {
+      background: #276749;
+    }
+    #output {
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      background: #f5f7fa;
+      border: 1px solid #dce3ea;
+      border-radius: 8px;
+      padding: 1rem;
+      min-height: 100px;
+    }
+    .warning {
+      color: #8a4b08;
+      background: #fff7e6;
+      padding: 1rem;
+      border-radius: 8px;
+    }
+    .error {
+      color: #a21c1c;
+    }
+    .small {
+      font-size: .9rem;
+      color: #526273;
+    }
+  </style>
 </head>
+
 <body>
 <main>
   <h1>EMS Outcome Tracker</h1>
-  <h2>EMS Practitioner Setup</h2>
+  <h2>EMS Practitioner Record Repair</h2>
 
   <p>
-    Read-only inspection of the synthetic EMS Practitioner,
-    PractitionerRole, and Organization records.
+    This administrative page repairs synthetic EMS demonstration
+    Practitioner, Organization, and PractitionerRole records.
   </p>
+
+  <div class="panel">
+    <strong>SMART connection</strong>
+    <p id="connection">Checking authorization...</p>
+  </div>
 
   <div class="warning">
     <strong>Safety:</strong>
-    This page only reads FHIR records. It does not create,
-    update, or delete any records.
+    Inspection is read-only. No records are changed until you
+    explicitly select Apply repairs. This page does not delete
+    resources or create replacement PractitionerRole records.
   </div>
 
-  <p id="status" class="status">
-    Checking SMART authorization...
+  <h3>EMS professional classifications</h3>
+  <ul>
+    <li>Basic Emergency Medical Technician — NUCC 146N00000X</li>
+    <li>Intermediate Emergency Medical Technician — NUCC 146M00000X</li>
+    <li>Paramedic — NUCC 146L00000X</li>
+  </ul>
+
+  <h3>Step 1 — Inspect existing records</h3>
+  <p>
+    This checks the existing demonstration Organization,
+    Practitioners, and three PractitionerRoles.
   </p>
 
-  <button id="authorize" hidden>
-    Authorize read-only inspection
-  </button>
+  <button id="inspect" disabled>Inspect existing EMS records</button>
 
-  <button id="inspect" hidden>
-    Inspect existing EMS records
-  </button>
+  <h3>Step 2 — Apply repairs</h3>
+  <p>
+    This button becomes available only after a successful inspection.
+    It creates missing records and repairs the existing role links.
+  </p>
 
-  <h3>Inspection results</h3>
-  <pre id="results">Waiting for SMART connection...</pre>
+  <button id="apply" disabled>Apply repairs</button>
+
+  <h3>Results</h3>
+  <pre id="output">Waiting for SMART authorization...</pre>
+  <p id="error" class="error" role="alert"></p>
+
+  <p class="small">
+    FHIR R4.0.1 | US Core 6.1.0 profile declarations |
+    Synthetic demonstration data only
+  </p>
 </main>
 
 <script>
 "use strict";
 
-const FHIR_BASE =
-"https://launch.smarthealthit.org/v/r4/sim/WzIsIiIsIiIsIk1BTlVBTCIsMCwwLDAsIiIsIiIsIiIsIiIsIiIsIiIsIiIsMCwyLCIiXQ/fhir";
-
-const CLIENT_ID = "my_web_app";
-
-const REDIRECT_URI =
-  window.location.origin + window.location.pathname;
-
-const SCOPES = [
-  "openid",
-  "fhirUser",
-  "user/Organization.rs",
-  "user/Practitioner.rs",
-  "user/PractitionerRole.rs"
-].join(" ");
-
 const ROOT =
-"https://olivia-h26.github.io/EMS-Outcome-Tracker-Provider";
+  "https://olivia-h26.github.io/EMS-Outcome-Tracker-Provider";
 
-const TAG_SYSTEM = ROOT + "/demo";
-const ID_SYSTEM = ROOT + "/identifiers/ems-demo";
-const NUCC_SYSTEM = "http://nucc.org/provider-taxonomy";
+const ID_SYSTEM =
+  ROOT + "/identifiers/ems-demo";
+
+const TAG_SYSTEM =
+  ROOT + "/tags";
+
+const NUCC_SYSTEM =
+  "http://nucc.org/provider-taxonomy";
+
+const PROFILE_VERSION = "6.1.0";
+
+const PROFILES = {
+  organization:
+    "http://hl7.org/fhir/us/core/StructureDefinition/us-core-organization",
+  practitioner:
+    "http://hl7.org/fhir/us/core/StructureDefinition/us-core-practitioner",
+  practitionerRole:
+    "http://hl7.org/fhir/us/core/StructureDefinition/us-core-practitionerrole"
+};
 
 const AGENCY_ID = "EMS-DEMO-AGENCY-001";
 
 const EMS_TYPES = [
   {
-    name: "Demo Basic EMT",
-    identifier: "EMS-DEMO-BASIC-001",
-    roleIdentifier: "EMS-ROLE-BASIC-001",
-    taxonomy: "146N00000X",
-    specialty: "Basic Emergency Medical Technician"
+    level: "Basic",
+    title: "Basic Emergency Medical Technician",
+    shortName: "Demo Basic EMT",
+    practitionerId: "EMS-DEMO-BASIC-001",
+    roleId: "EMS-ROLE-BASIC-001",
+    code: "146N00000X",
+    email: "basic.emt@example.invalid"
   },
   {
-    name: "Demo Intermediate EMT",
-    identifier: "EMS-DEMO-INTERMEDIATE-001",
-    roleIdentifier: "EMS-ROLE-INTERMEDIATE-001",
-    taxonomy: "146M00000X",
-    specialty: "Intermediate Emergency Medical Technician"
+    level: "Intermediate",
+    title: "Intermediate Emergency Medical Technician",
+    shortName: "Demo Intermediate EMT",
+    practitionerId: "EMS-DEMO-INTERMEDIATE-001",
+    roleId: "EMS-ROLE-INTERMEDIATE-001",
+    code: "146M00000X",
+    email: "intermediate.emt@example.invalid"
   },
   {
-    name: "Demo Paramedic EMT",
-    identifier: "EMS-DEMO-PARAMEDIC-001",
-    roleIdentifier: "EMS-ROLE-PARAMEDIC-001",
-    taxonomy: "146L00000X",
-    specialty: "Emergency Medical Technician, Paramedic"
+    level: "Paramedic",
+    title: "Paramedic",
+    shortName: "Demo Paramedic",
+    practitionerId: "EMS-DEMO-PARAMEDIC-001",
+    roleId: "EMS-ROLE-PARAMEDIC-001",
+    code: "146L00000X",
+    email: "paramedic@example.invalid"
   }
 ];
 
-const status = document.getElementById("status");
-const results = document.getElementById("results");
-const authorizeButton = document.getElementById("authorize");
+let smartClient = null;
+let repairPlan = null;
+
+const output = document.getElementById("output");
+const errorBox = document.getElementById("error");
 const inspectButton = document.getElementById("inspect");
+const applyButton = document.getElementById("apply");
 
-let client = null;
-let running = false;
-
-function setStatus(message, error = false) {
-  status.textContent = message;
-  status.style.background = error ? "#fff0f0" : "#edf3f7";
-  status.style.color = error ? "#a32b2b" : "#173b57";
+function show(message) {
+  output.textContent = message;
 }
 
-function getEntries(response) {
-  if (!response) return [];
-
-  if (Array.isArray(response)) {
-    return response.flatMap(getEntries);
-  }
-
-  if (response.resourceType === "Bundle") {
-    return (response.entry || [])
-      .map(item => item.resource)
-      .filter(Boolean);
-  }
-
-  return [];
+function fail(message) {
+  errorBox.textContent = message;
 }
 
-function hasDemoTag(resource) {
-  return (resource.meta?.tag || []).some(tag =>
+function addProfile(resource, canonical) {
+  resource.meta = resource.meta || {};
+  resource.meta.profile = resource.meta.profile || [];
+
+  const profile =
+    canonical + "|" + PROFILE_VERSION;
+
+  if (!resource.meta.profile.includes(profile)) {
+    resource.meta.profile.push(profile);
+  }
+}
+
+function addDemoTag(resource) {
+  resource.meta = resource.meta || {};
+  resource.meta.tag = resource.meta.tag || [];
+
+  const exists = resource.meta.tag.some(tag =>
     tag.system === TAG_SYSTEM &&
     tag.code === "synthetic-demo"
   );
+
+  if (!exists) {
+    resource.meta.tag.push({
+      system: TAG_SYSTEM,
+      code: "synthetic-demo",
+      display: "Synthetic demonstration record"
+    });
+  }
 }
 
-function identifiersText(resource) {
-  const identifiers = resource.identifier || [];
+async function findUniqueByIdentifier(resourceType, value) {
+  const path =
+    resourceType +
+    "?identifier=" +
+    encodeURIComponent(value) +
+    "&_count=10";
 
-  if (!identifiers.length) return "No identifiers";
+  const bundle = await smartClient.request(path);
 
-  return identifiers.map(item =>
-    (item.system || "(no system)") + "|" +
-    (item.value || "(no value)")
-  ).join("; ");
-}
+  const entries = (bundle.entry || [])
+    .map(entry => entry.resource)
+    .filter(Boolean);
 
-async function findByIdentifier(type, value) {
-  const token = encodeURIComponent(ID_SYSTEM + "|" + value);
-
-  const response = await client.request(
-    type + "?identifier=" + token + "&_count=10"
-  );
-
-  const found = getEntries(response);
-
-  if (found.length > 1) {
+  if (entries.length > 1) {
     throw new Error(
-      "Multiple " + type + " records found for identifier " +
-      value + ". Inspection stopped to avoid ambiguity."
+      "More than one " + resourceType +
+      " matched identifier " + value +
+      ". No repairs were applied."
     );
   }
 
-  if (found.length === 1 && !hasDemoTag(found[0])) {
+  return entries.length === 1 ? entries[0] : null;
+}
+
+async function createOrReuseOrganization(existing) {
+  if (existing) {
+    return existing;
+  }
+
+  const organization = {
+    resourceType: "Organization",
+    meta: {},
+    identifier: [{
+      system: ID_SYSTEM,
+      value: AGENCY_ID
+    }],
+    active: true,
+    name: "EMS Demonstration Agency",
+    telecom: [{
+      system: "email",
+      value: "ems-demo@example.invalid",
+      use: "work"
+    }]
+  };
+
+  addProfile(organization, PROFILES.organization);
+  addDemoTag(organization);
+
+  const created = await smartClient.create(organization);
+
+  if (!created || !created.id) {
     throw new Error(
-      type + " identifier " + value +
-      " exists but does not have our synthetic demo tag. " +
-      "Inspection stopped for safety."
+      "The Organization creation response did not contain an ID."
     );
   }
 
-  return found[0] || null;
+  return created;
 }
 
-async function resolveReference(reference, expectedType) {
-  if (!reference) {
-    return {
-      ok: false,
-      message: "Reference is missing"
-    };
+async function createOrReusePractitioner(existing, type) {
+  if (existing) {
+    return existing;
   }
 
-  const escapedType =
-    expectedType.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const practitioner = {
+    resourceType: "Practitioner",
+    meta: {},
+    identifier: [{
+      system: ID_SYSTEM,
+      value: type.practitionerId
+    }],
+    active: true,
+    name: [{
+      use: "official",
+      text: type.shortName,
+      family: "EMT",
+      given: ["Demo", type.level]
+    }]
+  };
 
-  const match = reference.match(
-    new RegExp("(?:^|/)" + escapedType + "/([^/?#]+)")
-  );
+  addProfile(practitioner, PROFILES.practitioner);
+  addDemoTag(practitioner);
 
-  if (!match) {
-    return {
-      ok: false,
-      message: "Unexpected reference: " + reference
-    };
-  }
+  const created = await smartClient.create(practitioner);
 
-  const id = decodeURIComponent(match[1]);
-
-  try {
-    const resource = await client.request(
-      expectedType + "/" + encodeURIComponent(id)
+  if (!created || !created.id) {
+    throw new Error(
+      "Practitioner creation failed for " + type.shortName
     );
-
-    return {
-      ok: true,
-      id,
-      resource,
-      message:
-        expectedType + "/" + id +
-        " exists; identifiers: " + identifiersText(resource)
-    };
-  } catch (error) {
-    return {
-      ok: false,
-      id,
-      message:
-        expectedType + "/" + id +
-        " could not be retrieved: " +
-        (error.message || String(error))
-    };
   }
+
+  return created;
 }
 
-function codingText(items) {
-  if (!items || !items.length) return "No coding or text";
+function prepareRole(role, type, practitioner, organization) {
+  role.practitioner = {
+    reference: "Practitioner/" + practitioner.id,
+    display: type.shortName
+  };
 
-  return items.map(item => {
-    const codings = (item.coding || []).map(c =>
-      (c.system || "(no system)") + "|" +
-      (c.code || "(no code)") +
-      (c.display ? " (" + c.display + ")" : "")
-    );
+  role.organization = {
+    reference: "Organization/" + organization.id,
+    display: "EMS Demonstration Agency"
+  };
 
-    if (item.text) codings.push("Text: " + item.text);
+  role.active = role.active === false ? false : true;
 
-    return codings.join("; ") || "Empty CodeableConcept";
-  }).join(" / ");
+  /*
+   * Keep the exact professional level in the role description.
+   * Do not assign the broader Paramedic SNOMED occupation code
+   * to Basic or Intermediate EMT.
+   *
+   * Code uses a text-only CodeableConcept because a verified,
+   * level-specific Care Team Member Function code has not been
+   * established for these EMS levels.
+   */
+  role.code = [{
+    text:
+      "Emergency medical response — " +
+      type.title +
+      " level"
+  }];
+
+  /*
+   * NUCC provider taxonomy belongs in specialty.
+   */
+  role.specialty = [{
+    coding: [{
+      system: NUCC_SYSTEM,
+      code: type.code,
+      display: type.title
+    }],
+    text: type.title
+  }];
+
+  /*
+   * US Core invariant pd-1 requires telecom or Endpoint.
+   * These reserved .invalid addresses are synthetic placeholders.
+   */
+  if (!role.telecom || role.telecom.length === 0) {
+    role.telecom = [{
+      system: "email",
+      value: type.email,
+      use: "work"
+    }];
+  }
+
+  addProfile(role, PROFILES.practitionerRole);
+  addDemoTag(role);
+
+  return role;
 }
 
 async function inspectRecords() {
-  if (!client || running) return;
+  fail("");
+  applyButton.disabled = true;
+  repairPlan = null;
 
-  running = true;
-  inspectButton.disabled = true;
-  results.textContent = "";
-  setStatus("Inspecting existing records. This is read-only.");
-
-  const lines = [];
-
-  function add(line = "") {
-    lines.push(line);
-    results.textContent = lines.join("\n");
-  }
+  show("Inspecting records. This step does not make changes...");
 
   try {
-    add("READ-ONLY EMS RECORD INSPECTION");
-    add("No FHIR records will be changed.");
-    add("");
-
-    add("1. EMS ORGANIZATION");
-    const organization = await findByIdentifier(
+    const organization = await findUniqueByIdentifier(
       "Organization",
       AGENCY_ID
     );
 
-    if (organization) {
-      add("Found: Organization/" + organization.id);
-      add("Name: " + (organization.name || "(no name)"));
-      add("Demo tag: " + hasDemoTag(organization));
-    } else {
-      add("NOT FOUND using identifier: " + AGENCY_ID);
-    }
+    const practitioners = {};
+    const roles = {};
 
-    add("");
-    add("2. EMS PRACTITIONERS AND PRACTITIONERROLES");
-
-    for (const item of EMS_TYPES) {
-      add("");
-      add("----------------------------------------");
-      add(item.name);
-      add("Expected NUCC: " + item.taxonomy);
-
-      const practitioner = await findByIdentifier(
-        "Practitioner",
-        item.identifier
-      );
-
-      const role = await findByIdentifier(
-        "PractitionerRole",
-        item.roleIdentifier
-      );
-
-      add("");
-      add("Practitioner:");
-
-      if (practitioner) {
-        add("Found: Practitioner/" + practitioner.id);
-        add("Identifiers: " + identifiersText(practitioner));
-      } else {
-        add("NOT FOUND: " + item.identifier);
-      }
-
-      add("");
-      add("PractitionerRole:");
-
-      if (!role) {
-        add("NOT FOUND: " + item.roleIdentifier);
-        continue;
-      }
-
-      add("Found: PractitionerRole/" + role.id);
-      add("Identifiers: " + identifiersText(role));
-      add("Active: " + String(role.active));
-      add("Role code: " + codingText(role.code));
-      add("Specialty: " + codingText(role.specialty));
-
-      const specialtyCodings =
-        (role.specialty || []).flatMap(s => s.coding || []);
-
-      const matchingTaxonomy = specialtyCodings.some(c =>
-        c.system === NUCC_SYSTEM &&
-        c.code === item.taxonomy
-      );
-
-      add(
-        "Expected NUCC specialty present: " +
-        (matchingTaxonomy ? "YES" : "NO")
-      );
-
-      add("");
-      add("Practitioner reference:");
-
-      const practitionerReference =
-        role.practitioner?.reference || "";
-
-      add("Stored reference: " +
-        (practitionerReference || "(missing)"));
-
-      const practitionerTarget = await resolveReference(
-        practitionerReference,
-        "Practitioner"
-      );
-
-      add(practitionerTarget.message);
-
-      if (practitioner && practitionerTarget.ok) {
-        add(
-          "Points to expected Practitioner: " +
-          (practitioner.id === practitionerTarget.id ? "YES" : "NO")
+    for (const type of EMS_TYPES) {
+      practitioners[type.level] =
+        await findUniqueByIdentifier(
+          "Practitioner",
+          type.practitionerId
         );
-      } else {
-        add("Expected Practitioner link verified: NO");
-      }
 
-      add("");
-      add("Organization reference:");
-
-      const organizationReference =
-        role.organization?.reference || "";
-
-      add("Stored reference: " +
-        (organizationReference || "(missing)"));
-
-      const organizationTarget = await resolveReference(
-        organizationReference,
-        "Organization"
-      );
-
-      add(organizationTarget.message);
-
-      if (organization && organizationTarget.ok) {
-        add(
-          "Points to expected EMS Organization: " +
-          (organization.id === organizationTarget.id ? "YES" : "NO")
+      roles[type.level] =
+        await findUniqueByIdentifier(
+          "PractitionerRole",
+          type.roleId
         );
-      } else {
-        add("Expected EMS Organization link verified: NO");
+
+      if (!roles[type.level]) {
+        throw new Error(
+          "Expected existing PractitionerRole not found: " +
+          type.roleId +
+          ". No repairs were applied. Please report this result."
+        );
       }
     }
 
-    add("");
-    add("----------------------------------------");
-    add("INSPECTION FINISHED.");
-    add("This page did not create, update, or delete records.");
-    add("Review these results before any write operation.");
+    repairPlan = {
+      organization,
+      practitioners,
+      roles
+    };
 
-    setStatus("Inspection complete. Review the detailed results.");
+    const lines = [
+      "READ-ONLY INSPECTION COMPLETE",
+      "",
+      "Organization:",
+      organization
+        ? "FOUND: Organization/" + organization.id
+        : "MISSING: " + AGENCY_ID,
+      "",
+      "Practitioners:"
+    ];
 
-  } catch (error) {
-    add("");
-    add("INSPECTION ERROR");
-    add(error.message || String(error));
-    add("");
-    add("No records were created, updated, or deleted.");
+    for (const type of EMS_TYPES) {
+      const practitioner = practitioners[type.level];
+      const role = roles[type.level];
 
-    setStatus(
-      "Inspection stopped. See the results for details.",
-      true
+      lines.push(
+        type.title + ": " +
+        (practitioner
+          ? "FOUND Practitioner/" + practitioner.id
+          : "MISSING — will create")
+      );
+
+      lines.push(
+        "  PractitionerRole/" + role.id + " FOUND"
+      );
+
+      lines.push(
+        "  NUCC specialty: " + type.code
+      );
+
+      lines.push(
+        "  Existing Practitioner reference: " +
+        (role.practitioner?.reference || "missing")
+      );
+
+      lines.push(
+        "  Existing Organization reference: " +
+        (role.organization?.reference || "missing")
+      );
+
+      lines.push("");
+    }
+
+    lines.push(
+      "No FHIR records have been created or changed.",
+      "",
+      "Review the results. If they match the expected demo records,",
+      "you may select Apply repairs."
     );
 
+    show(lines.join("\n"));
+    applyButton.disabled = false;
+
+  } catch (error) {
+    repairPlan = null;
+    fail(error.message || String(error));
+    show(
+      "Inspection stopped. No records were created or updated."
+    );
+  }
+}
+
+async function applyRepairs() {
+  if (!smartClient || !repairPlan) {
+    fail("Please complete a successful inspection first.");
+    return;
+  }
+
+  if (!window.confirm(
+    "Apply repairs to the synthetic EMS demonstration records?\n\n" +
+    "This will create missing Organization and Practitioner records " +
+    "and update the three existing PractitionerRole records.\n\n" +
+    "No records will be deleted."
+  )) {
+    return;
+  }
+
+  inspectButton.disabled = true;
+  applyButton.disabled = true;
+  fail("");
+
+  const lines = [
+    "APPLYING EMS DEMONSTRATION RECORD REPAIRS",
+    ""
+  ];
+
+  show(lines.join("\n"));
+
+  try {
+    const organization =
+      await createOrReuseOrganization(
+        repairPlan.organization
+      );
+
+    lines.push(
+      "Organization ready: Organization/" + organization.id
+    );
+    show(lines.join("\n"));
+
+    const savedPractitioners = {};
+
+    for (const type of EMS_TYPES) {
+      const practitioner =
+        await createOrReusePractitioner(
+          repairPlan.practitioners[type.level],
+          type
+        );
+
+      savedPractitioners[type.level] = practitioner;
+
+      lines.push(
+        type.title + ": Practitioner/" + practitioner.id
+      );
+
+      show(lines.join("\n"));
+    }
+
+    for (const type of EMS_TYPES) {
+      const role = repairPlan.roles[type.level];
+
+      prepareRole(
+        role,
+        type,
+        savedPractitioners[type.level],
+        organization
+      );
+
+      const updated = await smartClient.update(role);
+
+      if (!updated || !updated.id) {
+        throw new Error(
+          "Update did not return a saved PractitionerRole for " +
+          type.title
+        );
+      }
+
+      lines.push(
+        "Updated existing PractitionerRole/" + updated.id +
+        " for " + type.title
+      );
+
+      show(lines.join("\n"));
+    }
+
+    lines.push("");
+    lines.push("VERIFYING SAVED RECORDS...");
+
+    show(lines.join("\n"));
+
+    const verification = [];
+
+    for (const type of EMS_TYPES) {
+      const role = await smartClient.request(
+        "PractitionerRole/" +
+        repairPlan.roles[type.level].id
+      );
+
+      const expectedPractitioner =
+        "Practitioner/" +
+        savedPractitioners[type.level].id;
+
+      const expectedOrganization =
+        "Organization/" + organization.id;
+
+      const practitionerOK =
+        role.practitioner &&
+        role.practitioner.reference === expectedPractitioner;
+
+      const organizationOK =
+        role.organization &&
+        role.organization.reference === expectedOrganization;
+
+      const specialtyOK =
+        (role.specialty || []).some(specialty =>
+          (specialty.coding || []).some(coding =>
+            coding.system === NUCC_SYSTEM &&
+            coding.code === type.code
+          )
+        );
+
+      verification.push({
+        title: type.title,
+        practitionerOK,
+        organizationOK,
+        specialtyOK,
+        roleId: role.id
+      });
+    }
+
+    lines.push("");
+    lines.push("FINAL VERIFICATION");
+
+    let allPassed = true;
+
+    for (const result of verification) {
+      const passed =
+        result.practitionerOK &&
+        result.organizationOK &&
+        result.specialtyOK;
+
+      if (!passed) {
+        allPassed = false;
+      }
+
+      lines.push("");
+      lines.push(result.title);
+      lines.push(
+        "  Practitioner link: " +
+        (result.practitionerOK ? "PASS" : "CHECK")
+      );
+      lines.push(
+        "  Organization link: " +
+        (result.organizationOK ? "PASS" : "CHECK")
+      );
+      lines.push(
+        "  NUCC specialty: " +
+        (result.specialtyOK ? "PASS" : "CHECK")
+      );
+      lines.push(
+        "  Existing role: PractitionerRole/" + result.roleId
+      );
+    }
+
+    lines.push("");
+
+    if (allPassed) {
+      lines.push(
+        "SUCCESS: All three existing PractitionerRole records",
+        "have verified Practitioner and Organization links,",
+        "and their exact NUCC specialty codes are present."
+      );
+    } else {
+      lines.push(
+        "ATTENTION: Some verification checks did not pass.",
+        "Please share this result before attempting another repair."
+      );
+    }
+
+    lines.push("");
+    lines.push(
+      "No FHIR resources were deleted."
+    );
+
+    show(lines.join("\n"));
+
+  } catch (error) {
+    lines.push("");
+    lines.push(
+      "REPAIR STOPPED: " + (error.message || String(error))
+    );
+    lines.push("");
+    lines.push(
+      "Some earlier operations may already have succeeded.",
+      "Do not repeatedly click Apply repairs.",
+      "Share this result so the remaining records can be checked."
+    );
+
+    show(lines.join("\n"));
+    fail(error.message || String(error));
+
   } finally {
-    running = false;
     inspectButton.disabled = false;
+    applyButton.disabled = true;
+  }
+}
+
+async function initialize() {
+  try {
+    if (!window.FHIR || !FHIR.oauth2) {
+      throw new Error("The SMART FHIR library did not load.");
+    }
+
+    smartClient = await FHIR.oauth2.ready();
+
+    if (!smartClient || !smartClient.serverUrl) {
+      throw new Error(
+        "SMART authorization completed without a FHIR server URL."
+      );
+    }
+
+    document.getElementById("connection").textContent =
+      "Connected. Authorized FHIR server: " +
+      smartClient.serverUrl;
+
+    show(
+      "SMART connection ready.\n\n" +
+      "Select Inspect existing EMS records to begin."
+    );
+
+    inspectButton.disabled = false;
+
+  } catch (error) {
+    document.getElementById("connection").textContent =
+      "SMART connection could not be completed.";
+
+    fail(error.message || String(error));
+
+    show(
+      "Please open the SMART launch page and complete authorization."
+    );
   }
 }
 
 inspectButton.addEventListener("click", inspectRecords);
+applyButton.addEventListener("click", applyRepairs);
 
-authorizeButton.addEventListener("click", () => {
-  FHIR.oauth2.authorize({
-    clientId: CLIENT_ID,
-    scope: SCOPES,
-    redirectUri: REDIRECT_URI,
-    iss: FHIR_BASE,
-    pkceMode: "required"
-  }).catch(error => {
-    setStatus(
-      "Authorization failed: " +
-      (error.message || String(error)),
-      true
-    );
-  });
-});
-
-if (!window.FHIR || !FHIR.oauth2) {
-  setStatus("SMART library did not load. Refresh the page.", true);
-} else {
-  FHIR.oauth2.ready()
-    .then(authorizedClient => {
-      client = authorizedClient;
-      authorizeButton.hidden = true;
-      inspectButton.hidden = false;
-      setStatus("SMART connected. Ready for read-only inspection.");
-      results.textContent = "Ready. Click Inspect existing EMS records.";
-    })
-    .catch(() => {
-      setStatus("Authorize read-only EMS inspection access.");
-      authorizeButton.hidden = false;
-    });
-}
+document.addEventListener("DOMContentLoaded", initialize);
 </script>
-</main>
 </body>
 </html>
