@@ -1,42 +1,166 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>EMS Outcome Tracker — SMART Launch</title>
-  <script src="https://cdn.jsdelivr.net/npm/fhirclient/build/fhir-client.js"></script>
+  <title>EMS Outcome Tracker | Provider Sign In</title>
+  <script src="https://cdn.jsdelivr.net/npm/fhirclient@3.0.1/bundle/fhir-client.js"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: system-ui, sans-serif;
+      max-width: 650px;
+      margin: 4rem auto;
+      padding: 0 1.5rem;
+      line-height: 1.6;
+      color: #263445;
+      background: #f5f7fa;
+    }
+    main {
+      background: white;
+      padding: 2rem;
+      border-radius: 12px;
+      border: 1px solid #dce3ea;
+      box-shadow: 0 4px 15px rgba(0,0,0,.04);
+    }
+    h1 { color: #173b57; margin-bottom: .25rem; }
+    .subtitle { color: #64748b; }
+    .status {
+      margin-top: 1.5rem;
+      padding: 1rem;
+      background: #eef4f8;
+      border-radius: 8px;
+    }
+    #error {
+      color: #a21c1c;
+      background: #fff1f1;
+      padding: 1rem;
+      border-radius: 8px;
+      overflow-wrap: anywhere;
+    }
+    #retry {
+      display: none;
+      margin-top: 1rem;
+      padding: .8rem 1.2rem;
+      background: #173b57;
+      color: white;
+      border: 0;
+      border-radius: 7px;
+      cursor: pointer;
+      font-size: 1rem;
+    }
+  </style>
 </head>
 <body>
-  <p>Connecting to the SMART health record system...</p>
+  <main>
+    <h1>EMS Outcome Tracker</h1>
+    <p><strong>Provider sign in</strong></p>
+    <p class="subtitle">
+      Secure provider access to the read-only
+      EMS-to-hospital clinical continuity dashboard.
+    </p>
+    <p class="status" id="status" role="status">
+      Preparing SMART authentication…
+    </p>
+    <p id="error" role="alert" hidden></p>
+    <button id="retry" type="button">
+      Retry sign in
+    </button>
+  </main>
 
   <script>
+    "use strict";
+
+    // Existing configured FHIR R4 sandbox.
     const FHIR_SERVER =
-      "https://launch.smarthealthit.org/v/r4/sim/WzIsIiIsIjQ5NjUyNzUsNDk2NTI3NCw0OTY1MjczIiwiQVVUTyIsMCwwLDAsIiIsIiIsIiIsIiIsIiIsIiIsIiIsMCwyLCIiXQ/fhir";
+      "https://launch.smarthealthit.org/v/r4/sim/WzIsIiIsIiIsIk1BTlVBTCIsMCwwLDAsIiIsIiIsIiIsIiIsIiIsIiIsIiIsMCwyLCIiXQ/fhir";
 
     const CLIENT_ID = "my_web_app";
-    const REDIRECT_URI = new URL("index.html", window.location.href).href;
 
+    const REDIRECT_URI =
+      new URL("index.html", window.location.href).href;
+
+    // SMART 2.1 read and search scopes.
     const SCOPES = [
       "openid",
       "fhirUser",
-      "launch/patient",
-      "user/Patient.crs",
-      "user/Encounter.crs",
-      "user/Condition.crs",
-      "user/ClinicalImpression.crs",
-      "user/Provenance.crs",
+      "user/Patient.rs",
+      "user/Encounter.rs",
+      "user/Condition.rs",
       "user/Practitioner.rs",
       "user/PractitionerRole.rs",
       "user/Organization.rs"
     ].join(" ");
 
-    FHIR.oauth2.authorize({
-      clientId: CLIENT_ID,
-      scope: SCOPES,
-      redirectUri: REDIRECT_URI,
-      iss: FHIR_SERVER,
-      pkceMode: "required"
-    });
+    const statusNode =
+      document.getElementById("status");
+
+    const errorNode =
+      document.getElementById("error");
+
+    const retryButton =
+      document.getElementById("retry");
+
+    function showError(message) {
+      statusNode.textContent =
+        "Provider authorization could not be started.";
+
+      errorNode.hidden = false;
+      errorNode.textContent = message;
+
+      retryButton.style.display = "inline-block";
+    }
+
+    async function startAuthorization() {
+      errorNode.hidden = true;
+      retryButton.style.display = "none";
+
+      statusNode.textContent =
+        "Connecting to the SMART Health IT FHIR R4 sandbox…";
+
+      if (
+        !window.FHIR ||
+        !FHIR.oauth2 ||
+        typeof FHIR.oauth2.authorize !== "function"
+      ) {
+        showError(
+          "The SMART JavaScript client could not be loaded. " +
+          "Check your internet connection and reload this page."
+        );
+        return;
+      }
+
+      try {
+        await FHIR.oauth2.authorize({
+          clientId: CLIENT_ID,
+          scope: SCOPES,
+          redirectUri: REDIRECT_URI,
+          iss: FHIR_SERVER,
+          pkceMode: "required"
+        });
+      } catch (error) {
+        // Do not expose OAuth credentials or sensitive details.
+        console.error(
+          "SMART authorization could not be started (details omitted)."
+        );
+
+        showError(
+          "SMART sign-in could not start. " +
+          "Check the sandbox configuration " +
+          "and registered redirect URI."
+        );
+      }
+    }
+
+    retryButton.addEventListener(
+      "click",
+      startAuthorization
+    );
+
+    document.addEventListener(
+      "DOMContentLoaded",
+      startAuthorization
+    );
   </script>
 </body>
 </html>
