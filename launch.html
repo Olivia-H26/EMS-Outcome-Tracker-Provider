@@ -2,11 +2,16 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1">
+
   <title>EMS Outcome Tracker | Provider Sign In</title>
+
   <script src="https://cdn.jsdelivr.net/npm/fhirclient@3.0.1/bundle/fhir-client.js"></script>
+
   <style>
     * { box-sizing: border-box; }
+
     body {
       font-family: system-ui, sans-serif;
       max-width: 650px;
@@ -16,6 +21,7 @@
       color: #263445;
       background: #f5f7fa;
     }
+
     main {
       background: white;
       padding: 2rem;
@@ -23,14 +29,21 @@
       border: 1px solid #dce3ea;
       box-shadow: 0 4px 15px rgba(0,0,0,.04);
     }
-    h1 { color: #173b57; margin-bottom: .25rem; }
+
+    h1 {
+      color: #173b57;
+      margin-bottom: .25rem;
+    }
+
     .subtitle { color: #64748b; }
+
     .status {
       margin-top: 1.5rem;
       padding: 1rem;
       background: #eef4f8;
       border-radius: 8px;
     }
+
     #error {
       color: #a21c1c;
       background: #fff1f1;
@@ -38,6 +51,7 @@
       border-radius: 8px;
       overflow-wrap: anywhere;
     }
+
     #retry {
       display: none;
       margin-top: 1rem;
@@ -51,18 +65,24 @@
     }
   </style>
 </head>
+
 <body>
   <main>
     <h1>EMS Outcome Tracker</h1>
+
     <p><strong>Provider sign in</strong></p>
+
     <p class="subtitle">
       Secure provider access to the read-only
       EMS-to-hospital clinical continuity dashboard.
     </p>
+
     <p class="status" id="status" role="status">
       Preparing SMART authentication…
     </p>
+
     <p id="error" role="alert" hidden></p>
+
     <button id="retry" type="button">
       Retry sign in
     </button>
@@ -71,16 +91,27 @@
   <script>
     "use strict";
 
-    // Existing configured FHIR R4 sandbox.
+    // Restore the historical SMART sandbox selection
+    // containing the three EMS demonstration
+    // Practitioner IDs.
+    //
+    // Historical Practitioner IDs:
+    // 4965275, 4965274, 4965273
+    //
+    // Their identity and NUCC mappings must still
+    // be verified against the sandbox records.
     const FHIR_SERVER =
-      "https://launch.smarthealthit.org/v/r4/sim/WzIsIiIsIiIsIk1BTlVBTCIsMCwwLDAsIiIsIiIsIiIsIiIsIiIsIiIsIiIsMCwyLCIiXQ/fhir";
+      "https://launch.smarthealthit.org/v/r4/sim/WzIsIiIsIjQ5NjUyNzUsNDk2NTI3NCw0OTY1MjczIiwiQVVUTyIsMCwwLDAsIiIsIiIsIiIsIiIsIiIsIiIsMCwyLCIiXQ/fhir";
 
     const CLIENT_ID = "my_web_app";
 
     const REDIRECT_URI =
       new URL("index.html", window.location.href).href;
 
-    // SMART 2.1 read and search scopes.
+    // SMART App Launch 2.2.0-style
+    // read and search permissions.
+    // No create, update, or delete permissions
+    // are requested by the main dashboard.
     const SCOPES = [
       "openid",
       "fhirUser",
@@ -116,7 +147,7 @@
       retryButton.style.display = "none";
 
       statusNode.textContent =
-        "Connecting to the SMART Health IT FHIR R4 sandbox…";
+        "Connecting to the EMS provider SMART sandbox…";
 
       if (
         !window.FHIR ||
@@ -139,9 +170,10 @@
           pkceMode: "required"
         });
       } catch (error) {
-        // Do not expose OAuth credentials or sensitive details.
+        // Do not expose OAuth credentials,
+        // authorization codes, or tokens.
         console.error(
-          "SMART authorization could not be started (details omitted)."
+          "SMART authorization could not be started."
         );
 
         showError(
