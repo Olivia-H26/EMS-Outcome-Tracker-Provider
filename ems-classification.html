@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0">
+
+<title>EMS Provider Classification</title>
+
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #f4f7fb;
+    margin: 0;
+    padding: 30px 15px;
+    color: #243447;
+  }
+
+  .container {
+    max-width: 650px;
+    margin: 40px auto;
+    background: white;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 4px 18px rgba(0,0,0,.08);
+  }
+
+  h1 {
+    color: #173b57;
+  }
+
+  label {
+    display: block;
+    font-weight: bold;
+    margin: 25px 0 10px;
+  }
+
+  select {
+    width: 100%;
+    padding: 14px;
+    font-size: 16px;
+    border: 1px solid #aab7c4;
+    border-radius: 8px;
+    background: white;
+  }
+
+  .result {
+    margin-top: 25px;
+    padding: 20px;
+    background: #edf4fa;
+    border-radius: 8px;
+  }
+
+  .code {
+    font-size: 22px;
+    font-weight: bold;
+    color: #173b57;
+  }
+
+  .note {
+    margin-top: 20px;
+    font-size: 13px;
+    color: #566477;
+    line-height: 1.5;
+  }
+</style>
+</head>
+
+<body>
+
+<main class="container">
+
+  <h1>EMS Provider Classification</h1>
+
+  <p>Select an EMS professional classification.</p>
+
+  <label for="emsLevel">
+    EMS Provider Level
+  </label>
+
+  <select id="emsLevel">
+    <option value="146N00000X">
+      Basic EMT — 146N00000X
+    </option>
+    <option value="146M00000X">
+      Intermediate EMT — 146M00000X
+    </option>
+    <option value="146L00000X">
+      Paramedic — 146L00000X
+    </option>
+  </select>
+
+  <section class="result" aria-live="polite">
+    <p><strong>Selected Classification:</strong></p>
+    <p id="selectedName">Basic EMT</p>
+
+    <p><strong>NUCC Taxonomy Code:</strong></p>
+    <p class="code" id="selectedCode">
+      146N00000X
+    </p>
+
+    <p><strong>FHIR Element:</strong>
+      PractitionerRole.specialty
+    </p>
+
+    <p><strong>Code System:</strong>
+      http://nucc.org/provider-taxonomy
+    </p>
+  </section>
+
+  <p class="note">
+    This is a read-only EMS classification selector.
+    It does not authenticate users, verify licensure,
+    create FHIR resources, or modify clinical data.
+  </p>
+
+</main>
+
+<script>
+"use strict";
+
+const classifications = {
+  "146N00000X": "Basic EMT",
+  "146M00000X": "Intermediate EMT",
+  "146L00000X": "Paramedic"
+};
+
+const selector =
+  document.getElementById("emsLevel");
+
+function updateClassification() {
+  const code = selector.value;
+
+  document.getElementById("selectedName")
+    .textContent = classifications[code];
+
+  document.getElementById("selectedCode")
+    .textContent = code;
+}
+
+selector.addEventListener(
+  "change",
+  updateClassification
+);
+
+updateClassification();
+</script>
+
+</body>
+</html>
